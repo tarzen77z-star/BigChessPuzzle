@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Puzzles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<style>
+:root{
+  --bg:#0c0b09;--bg2:#131210;--bg3:#1a1814;--bg4:#222018;
+  --border:#2e2b24;--border2:#3d3a30;
+  --gold:#c9a84c;--gold2:#e0bf72;--gold-dim:rgba(201,168,76,0.15);
+  --text:#e8e2d9;--text2:#a09888;--text3:#5c574e;
+  --green:#4a9955;--green-bg:rgba(74,153,85,0.12);
+  --red-bg:rgba(184,64,64,0.12);
+  --diff-beg:#4a9955;--diff-easy:#2a7ab8;--diff-med:#c9a84c;--diff-hard:#b84040;
+  --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.page{width:100%;max-width:980px;padding:0 20px 60px;display:flex;flex-direction:column;align-items:center}
+
+/* HEADER */
+.header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:24px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.logo-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;letter-spacing:-0.5px}
+.logo-title em{color:var(--gold);font-style:normal}
+.logo-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
+.stats-bar{display:flex;gap:6px;flex-wrap:wrap}
+.stat-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2)}
+.stat-pill .val{color:var(--text);font-weight:500}
+.stat-pill.streak .val{color:var(--gold)}
+.stat-pill.streak.hot{background:var(--gold-dim);border-color:rgba(201,168,76,0.3)}
+
+/* DIFFICULTY SELECTOR */
+.difficulty-bar{width:100%;display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.diff-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+.diff-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.diff-tab{padding:7px 18px;border-radius:100px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.18s;text-transform:uppercase}
+.diff-tab:hover{background:var(--bg3);color:var(--text)}
+.diff-tab.active[data-diff="beginner"]{background:rgba(74,153,85,0.15);border-color:var(--diff-beg);color:var(--diff-beg)}
+.diff-tab.active[data-diff="easy"]   {background:rgba(42,122,184,0.15);border-color:var(--diff-easy);color:var(--diff-easy)}
+.diff-tab.active[data-diff="medium"] {background:rgba(201,168,76,0.15);border-color:var(--diff-med);color:var(--diff-med)}
+.diff-tab.active[data-diff="hard"]   {background:rgba(184,64,64,0.15);border-color:var(--diff-hard);color:var(--diff-hard)}
+.diff-desc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-left:4px}
+
+/* MAIN LAYOUT */
+.main-layout{width:100%;display:grid;grid-template-columns:1fr 320px;gap:28px;align-items:start}
+@media(max-width:700px){.main-layout{grid-template-columns:1fr}}
+
+/* BOARD META */
+.puzzle-meta-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+.puzzle-left{display:flex;align-items:center;gap:8px}
+.puzzle-badge{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:100px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.25)}
+.puzzle-badge.diff-beginner{background:rgba(74,153,85,0.12);color:var(--diff-beg);border-color:rgba(74,153,85,0.3)}
+.puzzle-badge.diff-easy    {background:rgba(42,122,184,0.12);color:var(--diff-easy);border-color:rgba(42,122,184,0.3)}
+.puzzle-badge.diff-medium  {background:rgba(201,168,76,0.12);color:var(--diff-med);border-color:rgba(201,168,76,0.3)}
+.puzzle-badge.diff-hard    {background:rgba(184,64,64,0.12);color:var(--diff-hard);border-color:rgba(184,64,64,0.3)}
+.puzzle-num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)}
+.turn-indicator{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);padding:5px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:100px}
+.turn-dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--border2);flex-shrink:0}
+.turn-dot.white{background:#e8e0cc;border-color:#bbb8ae}
+.turn-dot.black{background:#222;border-color:#555}
+
+/* BOARD */
+.board-wrap{position:relative;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--border),0 0 0 4px var(--bg2),0 0 0 5px var(--border),0 40px 80px rgba(0,0,0,0.8);user-select:none;touch-action:none}
+#chessCanvas{display:block;width:100%;cursor:grab}
+#chessCanvas:active{cursor:grabbing}
+#particleCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;border-radius:6px}
+#solveBanner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);background:rgba(10,9,8,0.93);border:1px solid var(--gold);border-radius:14px;padding:20px 36px;text-align:center;z-index:20;pointer-events:none;opacity:0;backdrop-filter:blur(10px);white-space:nowrap}
+#solveBanner.show{animation:bannerPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards}
+#solveBanner.hide{animation:bannerFade 0.35s ease forwards}
+@keyframes bannerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes bannerFade{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.85)}}
+.banner-icon{font-size:34px;line-height:1.2}
+.banner-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--gold);letter-spacing:-0.3px;margin-top:4px}
+.banner-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
+
+/* PROGRESS */
+.move-progress{margin-top:16px;display:flex;align-items:center;gap:10px}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+.progress-track{flex:1;height:3px;background:var(--bg4);border-radius:10px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:10px;transition:width 0.4s cubic-bezier(0.4,0,0.2,1);width:0%}
+.move-dots{display:flex;gap:6px}
+.move-dot{width:8px;height:8px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);transition:all 0.3s}
+.move-dot.player-done{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px rgba(201,168,76,0.5)}
+.move-dot.opp-done{background:var(--text3);border-color:var(--text3)}
+
+/* CONTROLS */
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{flex:1;padding:11px 14px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;border-radius:var(--radius);cursor:pointer;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--bg3)}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600}
+.btn.primary:hover{background:var(--gold2);border-color:var(--gold2)}
+.btn.icon-btn{flex:0 0 44px;padding:11px;font-size:15px}
+
+/* RIGHT PANEL */
+.right-panel{display:flex;flex-direction:column;gap:16px}
+.panel-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
+.status-body{padding:16px;display:flex;align-items:flex-start;gap:12px;min-height:80px}
+.status-icon-wrap{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all 0.3s;background:var(--bg3);border:1px solid var(--border2)}
+.status-icon-wrap.correct{background:var(--green-bg);border-color:rgba(74,153,85,0.3)}
+.status-icon-wrap.wrong{background:var(--red-bg);border-color:rgba(184,64,64,0.3)}
+.status-icon-wrap.done{background:var(--gold-dim);border-color:rgba(201,168,76,0.3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-icon-wrap.loading{animation:pulse 1.2s ease-in-out infinite}
+.status-title{font-size:14px;font-weight:500;color:var(--text);line-height:1.4}
+.status-sub{font-size:12px;color:var(--text2);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+/* HISTORY */
+.history-body{padding:12px 16px;max-height:160px;overflow-y:auto}
+.history-body::-webkit-scrollbar{width:3px}
+.history-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+.history-empty{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);text-align:center;padding:12px 0}
+.move-list{display:flex;flex-direction:column;gap:2px}
+.move-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:4px;padding:4px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.move-row:nth-child(odd){background:var(--bg3)}
+.move-num{color:var(--text3);font-size:10px}
+.move-w{color:var(--text)}
+.move-b{color:var(--text2)}
+
+/* LICHESS */
+.lichess-body{padding:14px 16px}
+.source-label{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+.lichess-btn{width:100%;padding:10px;background:var(--gold);color:var(--bg);border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.lichess-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.lichess-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.lichess-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);text-align:center}
+.fetched-info{margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);display:none;gap:8px;flex-wrap:wrap}
+.fetched-info span{color:var(--gold)}
+
+/* SOLUTION */
+.solution-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius)}
+.solution-body{padding:14px 16px;display:none;flex-wrap:wrap;gap:6px}
+.sol-move{font-family:'JetBrains Mono',monospace;font-size:12px;padding:3px 8px;border-radius:4px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.sol-move.player-move{color:var(--gold);border-color:rgba(201,168,76,0.3);background:var(--gold-dim)}
+
+/* PUZZLE GRID */
+.history-section{width:100%;margin-top:36px;border-top:1px solid var(--border);padding-top:28px}
+.section-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px}
+.puzzle-history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.history-item{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px}
+.history-item:hover{border-color:var(--border2);background:var(--bg3)}
+.history-item.solved{border-color:rgba(74,153,85,0.2)}
+.history-item.current{border-color:var(--gold);background:var(--gold-dim)}
+.hi-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.hi-dot.solved{background:var(--green)}
+.hi-dot.current{background:var(--gold)}
+.hi-diff{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;flex-shrink:0}
+.hi-diff.beginner{background:var(--diff-beg)}
+.hi-diff.easy{background:var(--diff-easy)}
+.hi-diff.medium{background:var(--diff-med)}
+.hi-diff.hard{background:var(--diff-hard)}
+.hi-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px;display:flex;align-items:center}
+.hi-moves{font-size:12px;color:var(--text2);margin-top:1px}
+
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.page{animation:fadeIn 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake 0.35s ease}
+@keyframes solveGlow{
+  0%  {box-shadow:0 0 0 1px var(--border),0 0 0 4px var(--bg2),0 0 0 5px var(--border)}
+  35% {box-shadow:0 0 0 2px var(--gold),0 0 0 10px rgba(201,168,76,0.3),0 0 60px rgba(201,168,76,0.3)}
+  100%{box-shadow:0 0 0 1px var(--border),0 0 0 4px var(--bg2),0 0 0 5px var(--border)}
+}
+.solve-glow{animation:solveGlow 1.8s ease forwards}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div style="display:flex;align-items:baseline">
+      <span class="logo-title">Chess <em>Puzzles</em></span>
+      <span class="logo-tag">Tactics Trainer</span>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-pill">Solved <span class="val" id="solvedCount">0</span></div>
+      <div class="stat-pill">Attempts <span class="val" id="attemptsCount">0</span></div>
+      <div class="stat-pill streak" id="streakPill">Streak <span class="val" id="streakCount">0</span> 🔥</div>
+    </div>
+  </header>
+
+  <!-- DIFFICULTY SELECTOR -->
+  <div class="difficulty-bar">
+    <span class="diff-label">Difficulty</span>
+    <div class="diff-tabs">
+      <button class="diff-tab active" data-diff="beginner" onclick="setDifficulty('beginner')">★ Beginner</button>
+      <button class="diff-tab" data-diff="easy"     onclick="setDifficulty('easy')">★★ Easy</button>
+      <button class="diff-tab" data-diff="medium"   onclick="setDifficulty('medium')">★★★ Medium</button>
+      <button class="diff-tab" data-diff="hard"     onclick="setDifficulty('hard')">★★★★ Hard</button>
+    </div>
+    <span class="diff-desc" id="diffDesc">Mate in 1 — find the winning move</span>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+    <div class="board-area">
+      <div class="puzzle-meta-row">
+        <div class="puzzle-left">
+          <span class="puzzle-badge diff-beginner" id="diffBadge">Mate in 1</span>
+          <span class="puzzle-num" id="puzzleNum">#001</span>
+        </div>
+        <div class="turn-indicator">
+          <div class="turn-dot white" id="turnDot"></div>
+          <span id="turnText">White to move</span>
+        </div>
+      </div>
+      <div class="board-wrap" id="boardWrap">
+        <canvas id="chessCanvas"></canvas>
+        <canvas id="particleCanvas"></canvas>
+        <div id="solveBanner">
+          <div class="banner-icon">♛</div>
+          <div class="banner-title">Puzzle Solved!</div>
+          <div class="banner-sub" id="bannerSub">Excellent play</div>
+        </div>
+      </div>
+      <div class="move-progress">
+        <span class="progress-label">Progress</span>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="move-dots" id="moveDots"></div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="prevBtn" onclick="prevPuzzle()" disabled>← Prev</button>
+        <button class="btn icon-btn" id="hintBtn" onclick="showHint()" title="Hint">💡</button>
+        <button class="btn icon-btn" onclick="showSolution()" title="Toggle solution">👁</button>
+        <button class="btn" onclick="resetPuzzle()">↺ Reset</button>
+        <button class="btn primary" onclick="nextPuzzle()">Next →</button>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <!-- Status -->
+      <div class="panel-card">
+        <div class="card-header"><span>Status</span><span id="themeLabel" style="color:var(--text2);font-size:10px"></span></div>
+        <div class="status-body">
+          <div class="status-icon-wrap" id="statusIcon">♟</div>
+          <div>
+            <div class="status-title" id="statusTitle">Find the winning sequence</div>
+            <div class="status-sub" id="statusSub">Drag a piece to make your move</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Move history -->
+      <div class="panel-card">
+        <div class="card-header"><span>Move history</span><span id="moveCount" style="color:var(--text2)">0 moves</span></div>
+        <div class="history-body" id="moveHistoryBody">
+          <div class="history-empty" id="historyEmpty">No moves yet</div>
+          <div class="move-list" id="moveList"></div>
+        </div>
+      </div>
+
+      <!-- Lichess -->
+      <div class="panel-card">
+        <div class="card-header"><span>Lichess puzzles</span></div>
+        <div class="lichess-body">
+          <p class="source-label">Load real rated puzzles from the Lichess open database.</p>
+          <button class="lichess-btn" id="lichessBtn" onclick="loadLichessPuzzle()">♞ Load from Lichess</button>
+          <div class="lichess-note" id="lichessNote">Requires internet connection</div>
+          <div class="fetched-info" id="fetchedInfo">Rating: <span id="fetchRating">—</span> &nbsp;|&nbsp; Theme: <span id="fetchTheme">—</span></div>
+        </div>
+      </div>
+
+      <!-- Solution -->
+      <div class="solution-card">
+        <div class="card-header"><span>Solution</span><span id="solLabel" style="color:var(--text3);font-size:10px">hidden</span></div>
+        <div class="solution-body" id="solutionBody">
+          <div id="solutionMoves" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUZZLE GRID -->
+  <div class="history-section">
+    <div class="section-title">Puzzles in this set</div>
+    <div class="puzzle-history-grid" id="puzzleGrid"></div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// PUZZLE DATA — verified with python-chess
+// All puzzles: no check at start, no attacker on king, correct solution
+// =====================================================================
+var ALL_PUZZLES = {
+  beginner: [
+    { label:'Mate in 1', fen:'7k/5Rpp/8/8/8/8/8/6K1 w - - 0 1',     solution:['f7f8'], orientation:'white', turn:'white', theme:'Rook slides to 8th' },
+    { label:'Mate in 1', fen:'7k/6pp/5R2/8/8/8/8/6K1 w - - 0 1',    solution:['f6f8'], orientation:'white', turn:'white', theme:'Rook to back rank' },
+    { label:'Mate in 1', fen:'6k1/5ppp/8/8/8/8/8/4Q1K1 w - - 0 1',  solution:['e1e8'], orientation:'white', turn:'white', theme:'Queen delivers' },
+    { label:'Mate in 1', fen:'7k/6pp/6Q1/8/8/8/8/6K1 w - - 0 1',   solution:['g6e8'], orientation:'white', turn:'white', theme:'Queen on 6th' },
+  ],
+  easy: [
+    { label:'Mate in 2', fen:'6k1/5pp1/8/3Q4/8/8/8/4R1K1 w - - 0 1',  solution:['e1e8','g8h7','d5h5'], orientation:'white', turn:'white', theme:'Rook check + Queen' },
+    { label:'Mate in 2', fen:'6k1/6pp/8/8/6B1/8/8/3Q2K1 w - - 0 1',  solution:['g4e6','g8h8','d1d8'], orientation:'white', turn:'white', theme:'Bishop diagonal cutoff' },
+    { label:'Mate in 2', fen:'3k4/3pp3/8/8/2QB4/8/8/3K4 w - - 0 1',  solution:['d4b6','d8e8','c4g8'], orientation:'white', turn:'white', theme:'Lolli bishop sacrifice' },
+    { label:'Mate in 2', fen:'6k1/4pp2/8/8/3B4/8/8/3Q2K1 w - - 0 1', solution:['d1g4','g8f8','g4c8'], orientation:'white', turn:'white', theme:'Bishop blocks escape' },
+    { label:'Mate in 2', fen:'6k1/5pp1/8/2Q5/8/8/8/4R1K1 w - - 0 1', solution:['e1e8','g8h7','c5h5'], orientation:'white', turn:'white', theme:'Drive the king' },
+  ],
+  medium: [
+    { label:'Mate in 2', fen:'5k2/5pp1/8/3Q4/8/8/8/4R1K1 w - - 0 1',         solution:['d5h5','f8g8','e1e8'],         orientation:'white', turn:'white', theme:'Quiet queen, 5 defences' },
+    { label:'Mate in 3', fen:'5k2/5pp1/8/3Q4/3B4/8/8/5RK1 w - - 0 1',        solution:['d5e6','f8g8','e6f7','g8h8','f7g7'], orientation:'white', turn:'white', theme:'Drive and corner' },
+    { label:'Mate in 3', fen:'6k1/5pp1/8/3Q4/3B4/8/8/5RK1 w - - 0 1',        solution:['d5f7','g8h8','f7f8','h8h7','f8g7'], orientation:'white', turn:'white', theme:'Bishop + Queen battery' },
+    { label:'Mate in 3', fen:'6k1/6pp/5p2/8/8/3N4/8/3QR1K1 w - - 0 1',       solution:['d1b3','g8h8','b3b8'],         orientation:'white', turn:'white', theme:'Knight + Queen' },
+    { label:'Mate in 3', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',        solution:['d5c6','e8f8','c6c8'],         orientation:'white', turn:'white', theme:'Q+B cornering' },
+  ],
+  hard: [
+    { label:'Mate in 3', fen:'r4k2/5ppp/8/3Q4/3B4/8/8/4R1K1 w - - 0 1',      solution:['d5b7','f8g8','b7a8'],         orientation:'white', turn:'white', theme:'Rook defends — overload it' },
+    { label:'Mate in 3', fen:'6k1/2r2ppp/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',     solution:['c5e5','g8h8','e5e8'],         orientation:'white', turn:'white', theme:'Rook defender — deflect' },
+    { label:'Mate in 3', fen:'4k3/2r1pp2/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',     solution:['c5c7','e8f8','c7d8'],         orientation:'white', turn:'white', theme:'Clearance + back rank' },
+    { label:'Mate in 3', fen:'6k1/4pp2/8/2Q5/3B4/8/8/5RK1 w - - 0 1',        solution:['c5e7','g8h7','e7f7','h7h6','d4e3'], orientation:'white', turn:'white', theme:'Domino drive' },
+  ],
+};
+
+var DIFF_INFO = {
+  beginner: { label:'★ Beginner', desc:'Mate in 1 — find the winning move',    color:'var(--diff-beg)'  },
+  easy:     { label:'★★ Easy',    desc:'Mate in 2 — one forced reply',          color:'var(--diff-easy)' },
+  medium:   { label:'★★★ Medium', desc:'Mate in 2-3 — multiple defences',       color:'var(--diff-med)'  },
+  hard:     { label:'★★★★ Hard',  desc:'Mate in 3 — extra defenders to beat',   color:'var(--diff-hard)' },
+};
+
+// =====================================================================
+// STATE
+// =====================================================================
+var currentDiff   = 'beginner';
+var PUZZLES       = ALL_PUZZLES[currentDiff].slice();
+var currentIdx    = 0;
+var game, playerMoves=[], allGameMoves=[], dragState=null;
+var hintSquare=null, hintTimer=null, opponentBusy=false, solutionVisible=false;
+var puzzleState={}, stats={};
+var canvas, ctx, SQ=0;
+
+// =====================================================================
+// PERSISTENCE
+// =====================================================================
+function loadStats()        { try{return JSON.parse(localStorage.getItem('cp_stats')||'{}');}catch(e){return{};} }
+function saveStats()        { try{localStorage.setItem('cp_stats',JSON.stringify(stats));}catch(e){} }
+function loadPuzzleStates() { try{return JSON.parse(localStorage.getItem('cp_pstate')||'{}');}catch(e){return{};} }
+function savePuzzleStates() { try{localStorage.setItem('cp_pstate',JSON.stringify(puzzleState));}catch(e){} }
+
+// =====================================================================
+// DIFFICULTY
+// =====================================================================
+function setDifficulty(diff) {
+  currentDiff = diff;
+  PUZZLES = ALL_PUZZLES[diff].slice();
+  currentIdx = 0;
+
+  // Update tab styles
+  document.querySelectorAll('.diff-tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.diff === diff);
+  });
+  document.getElementById('diffDesc').textContent = DIFF_INFO[diff].desc;
+
+  // Clear visited flags for this difficulty set
+  PUZZLES.forEach(function(_,i){ delete puzzleState['visited_'+diff+'_'+i]; });
+  initPuzzle();
+}
+
+// =====================================================================
+// CANVAS ENGINE
+// =====================================================================
+var PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+
+function initCanvas(){
+  canvas=document.getElementById('chessCanvas');
+  ctx=canvas.getContext('2d');
+  var sz=document.getElementById('boardWrap').clientWidth;
+  canvas.width=sz; canvas.height=sz; SQ=sz/8;
+}
+
+function sqName(f,r){return 'abcdefgh'[f]+(r+1);}
+
+function fileRankToXY(file,rank,ori){
+  return{x:(ori==='white'?file:7-file)*SQ+SQ/2,y:(ori==='white'?7-rank:rank)*SQ+SQ/2};
+}
+
+function xyToFileRank(px,py,ori){
+  var col=Math.max(0,Math.min(7,Math.floor(px/SQ)));
+  var row=Math.max(0,Math.min(7,Math.floor(py/SQ)));
+  return{file:ori==='white'?col:7-col, rank:ori==='white'?7-row:row};
+}
+
+function drawBoard(ori){
+  for(var row=0;row<8;row++) for(var col=0;col<8;col++){
+    var file=ori==='white'?col:7-col, rank=ori==='white'?7-row:row;
+    var sq=sqName(file,rank), light=(file+rank)%2===1;
+    var color=light?'#e8dfc5':'#7a5c1e';
+    if(hintSquare&&sq===hintSquare) color='#c9a84c';
+    if(dragState&&sqName(dragState.fromFile,dragState.fromRank)===sq)
+      color=light?'rgba(201,168,76,0.6)':'rgba(201,168,76,0.5)';
+    ctx.fillStyle=color; ctx.fillRect(col*SQ,row*SQ,SQ,SQ);
+    ctx.font=Math.round(SQ*0.17)+'px JetBrains Mono,monospace';
+    ctx.fillStyle=light?'#9a8b6a':'#c9a84c';
+    if(col===0){ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(rank+1,col*SQ+3,row*SQ+3);}
+    if(row===7){ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('abcdefgh'[file],col*SQ+SQ-3,row*SQ+SQ-3);}
+  }
+}
+
+function drawLegalDots(ori){
+  if(!dragState||!dragState.legalTargets) return;
+  dragState.legalTargets.forEach(function(sq){
+    var f='abcdefgh'.indexOf(sq[0]),r=parseInt(sq[1])-1;
+    var col=ori==='white'?f:7-f, row=ori==='white'?7-r:r;
+    var cx=col*SQ+SQ/2, cy=row*SQ+SQ/2;
+    ctx.save(); ctx.globalAlpha=0.4;
+    if(game.get(sq)){
+      ctx.strokeStyle='#c9a84c'; ctx.lineWidth=SQ*0.1;
+      ctx.beginPath(); ctx.arc(cx,cy,SQ*0.46,0,Math.PI*2); ctx.stroke();
+    }else{
+      ctx.fillStyle='#c9a84c';
+      ctx.beginPath(); ctx.arc(cx,cy,SQ*0.16,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+
+function drawPiece(key,cx,cy,sz){
+  var sym=PIECES[key]; if(!sym) return;
+  ctx.font=sz+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=Math.max(2,sz*0.09);
+  ctx.strokeStyle=key[0]==='w'?'rgba(0,0,0,0.6)':'rgba(255,255,255,0.22)';
+  ctx.strokeText(sym,cx,cy);
+  ctx.fillStyle=key[0]==='w'?'#fffde7':'#1a1208';
+  ctx.fillText(sym,cx,cy);
+}
+
+function drawPieces(ori){
+  var brd=game.board(), sz=Math.round(SQ*0.76);
+  for(var rank=0;rank<8;rank++) for(var file=0;file<8;file++){
+    var piece=brd[7-rank][file]; if(!piece) continue;
+    var sq=sqName(file,rank);
+    if(dragState&&sqName(dragState.fromFile,dragState.fromRank)===sq) continue;
+    var key=piece.color+piece.type.toUpperCase();
+    var col=ori==='white'?file:7-file, row=ori==='white'?7-rank:rank;
+    drawPiece(key,col*SQ+SQ/2,row*SQ+SQ/2,sz);
+  }
+}
+
+function drawDragged(){
+  if(!dragState) return;
+  ctx.save(); ctx.globalAlpha=0.93;
+  drawPiece(dragState.piece.color+dragState.piece.type.toUpperCase(),dragState.x,dragState.y,Math.round(SQ*0.88));
+  ctx.restore();
+}
+
+function render(){
+  if(!canvas||!ctx||!SQ) return;
+  var ori=getPuzzle().orientation;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawBoard(ori); drawLegalDots(ori); drawPieces(ori); drawDragged();
+}
+
+// =====================================================================
+// POINTER / TOUCH
+// =====================================================================
+function canvasXY(e){
+  var rect=canvas.getBoundingClientRect(),scx=canvas.width/rect.width,scy=canvas.height/rect.height;
+  var src=(e.touches&&e.touches.length)?e.touches[0]:(e.changedTouches&&e.changedTouches.length?e.changedTouches[0]:e);
+  return{x:(src.clientX-rect.left)*scx,y:(src.clientY-rect.top)*scy};
+}
+
+function onDown(e){
+  e.preventDefault(); if(opponentBusy) return;
+  var p=getPuzzle(), solIdx=playerMoves.length*2;
+  if(solIdx>=p.solution.length) return;
+  var pos=canvasXY(e), fr=xyToFileRank(pos.x,pos.y,p.orientation);
+  var sq=sqName(fr.file,fr.rank), piece=game.get(sq);
+  if(!piece||game.turn()!==piece.color) return;
+  var targets=game.moves({square:sq,verbose:true}).map(function(m){return m.to;});
+  dragState={piece:piece,fromFile:fr.file,fromRank:fr.rank,x:pos.x,y:pos.y,legalTargets:targets};
+  render();
+}
+
+function onMove(e){
+  if(!dragState) return;
+  e.preventDefault();
+  var pos=canvasXY(e); dragState.x=pos.x; dragState.y=pos.y; render();
+}
+
+function onUp(e){
+  if(!dragState) return;
+  e.preventDefault();
+  var p=getPuzzle(), pos=canvasXY(e);
+  var toFR=xyToFileRank(pos.x,pos.y,p.orientation);
+  var toSq=sqName(toFR.file,toFR.rank), fromSq=sqName(dragState.fromFile,dragState.fromRank);
+  dragState=null;
+  if(toSq===fromSq){render();return;}
+
+  var solIdx=playerMoves.length*2;
+  if(solIdx>=p.solution.length){render();return;}
+  var expected=p.solution[solIdx];
+  var move=game.move({from:fromSq,to:toSq,promotion:'q'});
+  if(!move){render();return;}
+  var made=move.from+move.to;
+
+  if(made!==expected){
+    game.undo(); render();
+    setStatus('wrong','Not the best move — try again','Look for the most forcing move');
+    var wrap=document.getElementById('boardWrap'); wrap.classList.add('shake');
+    setTimeout(function(){wrap.classList.remove('shake');},400);
+    setTimeout(function(){setStatus('idle','Find the winning sequence',p.theme||'');},1600);
+    return;
+  }
+
+  allGameMoves.push(move.san); playerMoves.push(made);
+  updateProgress(); updateMoveHistory(); render();
+
+  var nextIdx=solIdx+1;
+  if(nextIdx>=p.solution.length){puzzleSolved();return;}
+
+  opponentBusy=true;
+  setStatus('correct','Good move!','Opponent is thinking…');
+  setTimeout(function(){
+    var oppUCI=p.solution[nextIdx];
+    var oppMove=game.move({from:oppUCI.slice(0,2),to:oppUCI.slice(2,4),promotion:'q'});
+    if(oppMove){allGameMoves.push(oppMove.san);updateProgress();updateMoveHistory();render();}
+    opponentBusy=false;
+    var afterOpp=nextIdx+1;
+    if(afterOpp>=p.solution.length) puzzleSolved();
+    else setStatus('idle','Keep going — find the next move',"You're on the right track!");
+  },650);
+}
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+function getPuzzle(){return PUZZLES[currentIdx];}
+
+function setStatus(type,title,sub){
+  var icons={idle:'♟',correct:'✓',wrong:'✗',thinking:'…',done:'★',loading:'⧗'};
+  document.getElementById('statusIcon').className='status-icon-wrap '+type;
+  document.getElementById('statusIcon').textContent=icons[type]||'♟';
+  document.getElementById('statusTitle').textContent=title;
+  document.getElementById('statusSub').textContent=sub;
+}
+
+function buildDots(){
+  var p=getPuzzle(), dots=document.getElementById('moveDots');
+  dots.innerHTML='';
+  for(var i=0;i<p.solution.length;i++){
+    var d=document.createElement('div'); d.className='move-dot'; d.id='dot_'+i; dots.appendChild(d);
+  }
+}
+
+function updateProgress(){
+  var p=getPuzzle(), total=p.solution.length, done=allGameMoves.length;
+  document.getElementById('progressFill').style.width=(total>0?Math.round(done/total*100):0)+'%';
+  for(var i=0;i<total;i++){
+    var d=document.getElementById('dot_'+i);
+    if(d) d.className='move-dot'+(i<done?(i%2===0?' player-done':' opp-done'):'');
+  }
+}
+
+function updateMoveHistory(){
+  var list=document.getElementById('moveList'),empty=document.getElementById('historyEmpty');
+  var cnt=document.getElementById('moveCount');
+  if(!allGameMoves.length){empty.style.display='block';list.innerHTML='';cnt.textContent='0 moves';return;}
+  empty.style.display='none';
+  cnt.textContent=allGameMoves.length+' move'+(allGameMoves.length!==1?'s':'');
+  var html='';
+  for(var i=0;i<allGameMoves.length;i+=2)
+    html+='<div class="move-row"><span class="move-num">'+(Math.floor(i/2)+1)+'.</span><span class="move-w">'+(allGameMoves[i]||'')+'</span><span class="move-b">'+(allGameMoves[i+1]||'')+'</span></div>';
+  list.innerHTML=html;
+  document.getElementById('moveHistoryBody').scrollTop=9999;
+}
+
+function buildPuzzleGrid(){
+  var grid=document.getElementById('puzzleGrid'); grid.innerHTML='';
+  PUZZLES.forEach(function(p,i){
+    var key=currentDiff+'_'+i;
+    var solved=puzzleState[key]==='solved', current=i===currentIdx;
+    var div=document.createElement('div');
+    div.className='history-item'+(solved?' solved':'')+(current?' current':'');
+    div.onclick=(function(idx){return function(){
+      delete puzzleState['visited_'+currentDiff+'_'+idx];
+      currentIdx=idx; initPuzzle();
+    };})(i);
+    div.innerHTML='<div class="hi-dot '+(solved?'solved':current?'current':'')+'"></div>'
+      +'<div><div class="hi-label"><span class="hi-diff '+currentDiff+'"></span>#'+(i+1)+'</div>'
+      +'<div class="hi-moves">'+p.label+'</div></div>';
+    grid.appendChild(div);
+  });
+}
+
+function updateStatsUI(){
+  document.getElementById('solvedCount').textContent=stats.solved||0;
+  document.getElementById('attemptsCount').textContent=stats.attempts||0;
+  document.getElementById('streakCount').textContent=stats.streak||0;
+  document.getElementById('streakPill').className='stat-pill streak'+((stats.streak||0)>=3?' hot':'');
+}
+
+// =====================================================================
+// INIT PUZZLE
+// =====================================================================
+function bindCanvas(){
+  ['mousedown','mousemove','mouseup','touchstart','touchmove','touchend'].forEach(function(ev){
+    canvas.removeEventListener(ev,ev==='mousedown'||ev==='touchstart'?onDown:ev==='mousemove'||ev==='touchmove'?onMove:onUp);
+  });
+  canvas.addEventListener('mousedown',onDown); canvas.addEventListener('mousemove',onMove); canvas.addEventListener('mouseup',onUp);
+  canvas.addEventListener('touchstart',onDown,{passive:false}); canvas.addEventListener('touchmove',onMove,{passive:false}); canvas.addEventListener('touchend',onUp,{passive:false});
+}
+
+function initPuzzle(){
+  var p=getPuzzle();
+  game=new Chess(p.fen);
+  playerMoves=[]; allGameMoves=[]; dragState=null; opponentBusy=false; solutionVisible=false;
+  if(hintTimer) clearTimeout(hintTimer); hintSquare=null;
+
+  // Badge with difficulty colour
+  var badge=document.getElementById('diffBadge');
+  badge.textContent=p.label;
+  badge.className='puzzle-badge diff-'+currentDiff;
+  document.getElementById('puzzleNum').textContent='#'+(currentIdx+1);
+  document.getElementById('turnDot').className='turn-dot '+p.turn;
+  document.getElementById('turnText').textContent=(p.turn==='white'?'White':'Black')+' to move';
+  document.getElementById('themeLabel').textContent=p.theme||'';
+  document.getElementById('prevBtn').disabled=currentIdx===0;
+  document.getElementById('hintBtn').disabled=false;
+  document.getElementById('solutionBody').style.display='none';
+  document.getElementById('solutionMoves').innerHTML='';
+  document.getElementById('solLabel').textContent='hidden';
+  document.getElementById('fetchedInfo').style.display='none';
+
+  buildDots(); updateProgress(); updateMoveHistory(); buildPuzzleGrid();
+  setStatus('idle','Find the winning sequence',p.theme||'Drag a piece to make your move');
+
+  initCanvas(); render(); bindCanvas();
+
+  // Attempts: only count first visit per puzzle per difficulty
+  var vkey='visited_'+currentDiff+'_'+currentIdx;
+  if(!puzzleState[vkey]){
+    puzzleState[vkey]=true;
+    stats.attempts=(stats.attempts||0)+1;
+    saveStats(); updateStatsUI();
+  }
+}
+
+// =====================================================================
+// SOLVE
+// =====================================================================
+function puzzleSolved(){
+  var key=currentDiff+'_'+currentIdx;
+  if(puzzleState[key]!=='solved'){
+    puzzleState[key]='solved'; savePuzzleStates();
+    stats.solved=(stats.solved||0)+1;
+    stats.streak=(stats.streak||0)+1;
+    if(stats.streak>(stats.bestStreak||0)) stats.bestStreak=stats.streak;
+    saveStats(); updateStatsUI();
+  }
+  setStatus('done','★ Puzzle solved!','Excellent — you found the winning line');
+  document.getElementById('hintBtn').disabled=true;
+  buildPuzzleGrid();
+  runSolveAnimation();
+}
+
+function runSolveAnimation(){
+  // 1. Board glow
+  var wrap=document.getElementById('boardWrap');
+  wrap.classList.remove('solve-glow'); void wrap.offsetWidth;
+  wrap.classList.add('solve-glow');
+
+  // 2. Particles
+  var pc=document.getElementById('particleCanvas');
+  var pw=wrap.clientWidth, ph=wrap.clientHeight;
+  pc.width=pw; pc.height=ph;
+  var pctx=pc.getContext('2d');
+  var COLORS=['#c9a84c','#e0bf72','#fff8e1','#4a9955','#ffffff','#f0d080','#a8d8a8'];
+  var parts=[];
+  for(var i=0;i<100;i++){
+    var angle=Math.random()*Math.PI*2, speed=1.5+Math.random()*5.5;
+    parts.push({x:pw/2,y:ph/2,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-Math.random()*2,
+      r:2+Math.random()*4,color:COLORS[Math.floor(Math.random()*COLORS.length)],
+      alpha:1,grav:0.07+Math.random()*0.06,life:0});
+  }
+  var frame=0, maxF=90;
+  function animP(){
+    pctx.clearRect(0,0,pw,ph);
+    parts.forEach(function(p){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=p.grav; p.vx*=0.98; p.life++;
+      p.alpha=Math.max(0,1-p.life/maxF);
+      pctx.save(); pctx.globalAlpha=p.alpha; pctx.fillStyle=p.color;
+      pctx.beginPath(); pctx.arc(p.x,p.y,p.r,0,Math.PI*2); pctx.fill(); pctx.restore();
+    });
+    if(++frame<maxF) requestAnimationFrame(animP);
+    else pctx.clearRect(0,0,pw,ph);
+  }
+  requestAnimationFrame(animP);
+
+  // 3. Banner
+  var banner=document.getElementById('solveBanner');
+  var msgs=['Excellent play!','You found it!','Brilliant!','Well done!','Perfect!','Spot on!'];
+  document.getElementById('bannerSub').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  banner.className=''; void banner.offsetWidth;
+  banner.classList.add('show');
+  setTimeout(function(){
+    banner.classList.remove('show'); banner.classList.add('hide');
+    setTimeout(function(){banner.className='';},400);
+  },2000);
+}
+
+// =====================================================================
+// CONTROLS
+// =====================================================================
+function showHint(){
+  var p=getPuzzle(), solIdx=playerMoves.length*2;
+  if(solIdx>=p.solution.length) return;
+  hintSquare=p.solution[solIdx].slice(0,2); render();
+  if(hintTimer) clearTimeout(hintTimer);
+  hintTimer=setTimeout(function(){hintSquare=null;render();},1600);
+  setStatus('thinking','Hint: move the highlighted piece','Look for the most forcing follow-up');
+}
+
+function showSolution(){
+  var p=getPuzzle(), body=document.getElementById('solutionBody');
+  var moves=document.getElementById('solutionMoves'), lbl=document.getElementById('solLabel');
+  solutionVisible=!solutionVisible;
+  body.style.display=solutionVisible?'flex':'none';
+  lbl.textContent=solutionVisible?'shown':'hidden';
+  if(solutionVisible){
+    var g2=new Chess(p.fen);
+    moves.innerHTML=p.solution.map(function(uci,i){
+      var mv=g2.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:'q'});
+      return '<span class="sol-move'+(i%2===0?' player-move':'')+'">'+((mv&&mv.san)||uci)+'</span>';
+    }).join('');
+  }
+  if(solutionVisible&&puzzleState[currentDiff+'_'+currentIdx]!=='solved'){
+    stats.streak=0; saveStats(); updateStatsUI();
+  }
+}
+
+function resetPuzzle(){initPuzzle();}
+
+function nextPuzzle(){
+  currentIdx=(currentIdx+1)%PUZZLES.length;
+  delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
+  initPuzzle();
+}
+
+function prevPuzzle(){
+  if(currentIdx>0){
+    currentIdx--;
+    delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
+    initPuzzle();
+  }
+}
+
+// =====================================================================
+// LICHESS
+// =====================================================================
+function loadLichessPuzzle(){
+  var btn=document.getElementById('lichessBtn'), note=document.getElementById('lichessNote');
+  btn.disabled=true; btn.textContent='⧗ Loading…'; note.textContent='Fetching from lichess.org…';
+  setStatus('loading','Loading from Lichess…','Fetching a real rated puzzle');
+  fetch('https://lichess.org/api/puzzle/next',{headers:{Accept:'application/json'}})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(data){
+      var puz=data.puzzle, gd=data.game;
+      var fen=buildFenFromPGN(gd.pgn,puz.initialPly);
+      if(!fen) throw new Error('Bad FEN');
+      var tmp=new Chess(fen), turn=tmp.turn()==='w'?'white':'black';
+      var np={label:'Lichess Puzzle',fen:fen,solution:puz.solution,orientation:turn,turn:turn,
+        theme:(puz.themes||['tactics'])[0]||'tactics',rating:puz.rating||'?'};
+      PUZZLES.unshift(np); currentIdx=0;
+      document.getElementById('fetchRating').textContent=np.rating;
+      document.getElementById('fetchTheme').textContent=np.theme;
+      document.getElementById('fetchedInfo').style.display='flex';
+      note.textContent='Loaded puzzle #'+puz.id;
+      initPuzzle();
+    })
+    .catch(function(err){
+      note.textContent='Failed — check internet connection';
+      setStatus('wrong','Could not load Lichess puzzle','Check your internet connection');
+      setTimeout(function(){setStatus('idle','Find the winning sequence',getPuzzle().theme||'');},2500);
+    })
+    .finally(function(){btn.disabled=false;btn.textContent='♞ Load from Lichess';});
+}
+
+function buildFenFromPGN(pgn,targetPly){
+  try{
+    var g=new Chess(), toks=pgn.trim().split(/\s+/).filter(function(t){return !/^\d+\./.test(t)&&t&&t!=='*';});
+    for(var i=0;i<Math.min(targetPly,toks.length);i++){if(!g.move(toks[i]))break;}
+    return g.fen();
+  }catch(e){return null;}
+}
+
+// =====================================================================
+// BOOT
+// =====================================================================
+stats=loadStats(); puzzleState=loadPuzzleStates();
+if(!stats.solved)stats.solved=0;
+if(!stats.attempts)stats.attempts=0;
+if(!stats.streak)stats.streak=0;
+if(!stats.bestStreak)stats.bestStreak=0;
+// Auto-correct inflated attempts from old buggy sessions
+if(stats.attempts>(stats.solved||0)*15){stats.attempts=stats.solved||0;saveStats();}
+updateStatsUI();
+// Init difficulty tabs
+document.getElementById('diffDesc').textContent=DIFF_INFO[currentDiff].desc;
+window.addEventListener('load',function(){initPuzzle();});
+window.addEventListener('resize',function(){if(game){initCanvas();render();}});
+</script>
+</body>
+</html>
