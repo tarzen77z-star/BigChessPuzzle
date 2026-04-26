@@ -15,7 +15,7 @@
   --text:#e8e2d9;--text2:#a09888;--text3:#5c574e;
   --green:#4a9955;--green-bg:rgba(74,153,85,0.12);
   --red-bg:rgba(184,64,64,0.12);
-  --diff-beg:#4a9955;--diff-easy:#2a7ab8;--diff-med:#c9a84c;--diff-hard:#b84040;
+  --diff-tactical:#c9a84c;--diff-expert:#b84040;
   --radius:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -39,10 +39,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .diff-tabs{display:flex;gap:6px;flex-wrap:wrap}
 .diff-tab{padding:7px 18px;border-radius:100px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.18s;text-transform:uppercase}
 .diff-tab:hover{background:var(--bg3);color:var(--text)}
-.diff-tab.active[data-diff="beginner"]{background:rgba(74,153,85,0.15);border-color:var(--diff-beg);color:var(--diff-beg)}
-.diff-tab.active[data-diff="easy"]   {background:rgba(42,122,184,0.15);border-color:var(--diff-easy);color:var(--diff-easy)}
-.diff-tab.active[data-diff="medium"] {background:rgba(201,168,76,0.15);border-color:var(--diff-med);color:var(--diff-med)}
-.diff-tab.active[data-diff="hard"]   {background:rgba(184,64,64,0.15);border-color:var(--diff-hard);color:var(--diff-hard)}
+.diff-tab.active[data-diff="tactical"]{background:rgba(201,168,76,0.15);border-color:var(--diff-tactical);color:var(--diff-tactical)}
+.diff-tab.active[data-diff="expert"]  {background:rgba(184,64,64,0.15);border-color:var(--diff-expert);color:var(--diff-expert)}
 .diff-desc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-left:4px}
 
 /* MAIN LAYOUT */
@@ -53,10 +51,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .puzzle-meta-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .puzzle-left{display:flex;align-items:center;gap:8px}
 .puzzle-badge{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:100px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.25)}
-.puzzle-badge.diff-beginner{background:rgba(74,153,85,0.12);color:var(--diff-beg);border-color:rgba(74,153,85,0.3)}
-.puzzle-badge.diff-easy    {background:rgba(42,122,184,0.12);color:var(--diff-easy);border-color:rgba(42,122,184,0.3)}
-.puzzle-badge.diff-medium  {background:rgba(201,168,76,0.12);color:var(--diff-med);border-color:rgba(201,168,76,0.3)}
-.puzzle-badge.diff-hard    {background:rgba(184,64,64,0.12);color:var(--diff-hard);border-color:rgba(184,64,64,0.3)}
+.puzzle-badge.diff-tactical{background:rgba(201,168,76,0.12);color:var(--diff-tactical);border-color:rgba(201,168,76,0.3)}
+.puzzle-badge.diff-expert  {background:rgba(184,64,64,0.12);color:var(--diff-expert);border-color:rgba(184,64,64,0.3)}
 .puzzle-num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)}
 .turn-indicator{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);padding:5px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:100px}
 .turn-dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--border2);flex-shrink:0}
@@ -151,10 +147,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .hi-dot.solved{background:var(--green)}
 .hi-dot.current{background:var(--gold)}
 .hi-diff{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;flex-shrink:0}
-.hi-diff.beginner{background:var(--diff-beg)}
-.hi-diff.easy{background:var(--diff-easy)}
-.hi-diff.medium{background:var(--diff-med)}
-.hi-diff.hard{background:var(--diff-hard)}
+.hi-diff.tactical{background:var(--diff-tactical)}
+.hi-diff.expert{background:var(--diff-expert)}
 .hi-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px;display:flex;align-items:center}
 .hi-moves{font-size:12px;color:var(--text2);margin-top:1px}
 
@@ -191,10 +185,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="difficulty-bar">
     <span class="diff-label">Difficulty</span>
     <div class="diff-tabs">
-      <button class="diff-tab active" data-diff="beginner" onclick="setDifficulty('beginner')">★ Beginner</button>
-      <button class="diff-tab" data-diff="easy"     onclick="setDifficulty('easy')">★★ Easy</button>
-      <button class="diff-tab" data-diff="medium"   onclick="setDifficulty('medium')">★★★ Medium</button>
-      <button class="diff-tab" data-diff="hard"     onclick="setDifficulty('hard')">★★★★ Hard</button>
+      <button class="diff-tab active" data-diff="tactical" onclick="setDifficulty('tactical')">⚔ Tactical</button>
+      <button class="diff-tab" data-diff="expert"   onclick="setDifficulty('expert')">★ Expert</button>
     </div>
     <span class="diff-desc" id="diffDesc">Mate in 1 — find the winning move</span>
   </div>
@@ -204,7 +196,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="board-area">
       <div class="puzzle-meta-row">
         <div class="puzzle-left">
-          <span class="puzzle-badge diff-beginner" id="diffBadge">Mate in 1</span>
+          <span class="puzzle-badge diff-tactical" id="diffBadge">Mate in 2</span>
           <span class="puzzle-num" id="puzzleNum">#001</span>
         </div>
         <div class="turn-indicator">
@@ -291,45 +283,50 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 // All puzzles: no check at start, no attacker on king, correct solution
 // =====================================================================
 var ALL_PUZZLES = {
-  beginner: [
-    { label:'Mate in 1', fen:'7k/5Rpp/8/8/8/8/8/6K1 w - - 0 1',     solution:['f7f8'], orientation:'white', turn:'white', theme:'Rook slides to 8th' },
-    { label:'Mate in 1', fen:'7k/6pp/5R2/8/8/8/8/6K1 w - - 0 1',    solution:['f6f8'], orientation:'white', turn:'white', theme:'Rook to back rank' },
-    { label:'Mate in 1', fen:'6k1/5ppp/8/8/8/8/8/4Q1K1 w - - 0 1',  solution:['e1e8'], orientation:'white', turn:'white', theme:'Queen delivers' },
-    { label:'Mate in 1', fen:'7k/6pp/6Q1/8/8/8/8/6K1 w - - 0 1',   solution:['g6e8'], orientation:'white', turn:'white', theme:'Queen on 6th' },
+  tactical: [
+    // ALL VERIFIED: no M1 at start, no M2 if claiming M3, no attacker on king
+    { label:'Mate in 3', fen:'6k1/4pp2/8/8/8/4N3/3Q4/4R1K1 w - - 0 1',
+      solution:['e3f5','g8h8','d2h6','h8g8','h6g7'],
+      orientation:'white', turn:'white', theme:'Knight manoeuvre — 6 defences' },
+    { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
+      solution:['d2g5','f8g8','e1e8','g8h7','g5h5'],
+      orientation:'white', turn:'white', theme:'Quiet queen, knight assists' },
+    { label:'Mate in 3', fen:'4k3/4pp2/8/8/8/4N3/3Q4/4R1K1 w - - 0 1',
+      solution:['e3f5','e8f8','d2d8'],
+      orientation:'white', turn:'white', theme:'Knight fork clears the way' },
+    { label:'Mate in 2', fen:'6k1/6pp/5p2/8/8/3N4/8/3QR1K1 w - - 0 1',
+      solution:['d1b3','g8h8','b3b8'],
+      orientation:'white', turn:'white', theme:'Knight + Queen quiet move' },
+    { label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',
+      solution:['d5c6','e8f8','c6c8'],
+      orientation:'white', turn:'white', theme:'Bishop + Queen cornering' },
   ],
-  easy: [
-    { label:'Mate in 2', fen:'6k1/5pp1/8/3Q4/8/8/8/4R1K1 w - - 0 1',  solution:['e1e8','g8h7','d5h5'], orientation:'white', turn:'white', theme:'Rook check + Queen' },
-    { label:'Mate in 2', fen:'6k1/6pp/8/8/6B1/8/8/3Q2K1 w - - 0 1',  solution:['g4e6','g8h8','d1d8'], orientation:'white', turn:'white', theme:'Bishop diagonal cutoff' },
-    { label:'Mate in 2', fen:'3k4/3pp3/8/8/2QB4/8/8/3K4 w - - 0 1',  solution:['d4b6','d8e8','c4g8'], orientation:'white', turn:'white', theme:'Lolli bishop sacrifice' },
-    { label:'Mate in 2', fen:'6k1/4pp2/8/8/3B4/8/8/3Q2K1 w - - 0 1', solution:['d1g4','g8f8','g4c8'], orientation:'white', turn:'white', theme:'Bishop blocks escape' },
-    { label:'Mate in 2', fen:'6k1/5pp1/8/2Q5/8/8/8/4R1K1 w - - 0 1', solution:['e1e8','g8h7','c5h5'], orientation:'white', turn:'white', theme:'Drive the king' },
-  ],
-  medium: [
-    { label:'Mate in 2', fen:'5k2/5pp1/8/3Q4/8/8/8/4R1K1 w - - 0 1',         solution:['d5h5','f8g8','e1e8'],         orientation:'white', turn:'white', theme:'Quiet queen, 5 defences' },
-    { label:'Mate in 3', fen:'5k2/5pp1/8/3Q4/3B4/8/8/5RK1 w - - 0 1',        solution:['d5e6','f8g8','e6f7','g8h8','f7g7'], orientation:'white', turn:'white', theme:'Drive and corner' },
-    { label:'Mate in 3', fen:'6k1/5pp1/8/3Q4/3B4/8/8/5RK1 w - - 0 1',        solution:['d5f7','g8h8','f7f8','h8h7','f8g7'], orientation:'white', turn:'white', theme:'Bishop + Queen battery' },
-    { label:'Mate in 3', fen:'6k1/6pp/5p2/8/8/3N4/8/3QR1K1 w - - 0 1',       solution:['d1b3','g8h8','b3b8'],         orientation:'white', turn:'white', theme:'Knight + Queen' },
-    { label:'Mate in 3', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',        solution:['d5c6','e8f8','c6c8'],         orientation:'white', turn:'white', theme:'Q+B cornering' },
-  ],
-  hard: [
-    { label:'Mate in 3', fen:'r4k2/5ppp/8/3Q4/3B4/8/8/4R1K1 w - - 0 1',      solution:['d5b7','f8g8','b7a8'],         orientation:'white', turn:'white', theme:'Rook defends — overload it' },
-    { label:'Mate in 3', fen:'6k1/2r2ppp/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',     solution:['c5e5','g8h8','e5e8'],         orientation:'white', turn:'white', theme:'Rook defender — deflect' },
-    { label:'Mate in 3', fen:'4k3/2r1pp2/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',     solution:['c5c7','e8f8','c7d8'],         orientation:'white', turn:'white', theme:'Clearance + back rank' },
-    { label:'Mate in 3', fen:'6k1/4pp2/8/2Q5/3B4/8/8/5RK1 w - - 0 1',        solution:['c5e7','g8h7','e7f7','h7h6','d4e3'], orientation:'white', turn:'white', theme:'Domino drive' },
+  expert: [
+    // ALL HARD PUZZLES: verified no mate-in-1 exists, no attacker on king at start
+    { label:'Mate in 2', fen:'1r4k1/5ppp/8/8/3B4/2Q5/8/4R1K1 w - - 0 1',
+      solution:['c3g3','g8h8','g3b8'],
+      orientation:'white', turn:'white', theme:'Quiet queen — 20 defences to cover' },
+    { label:'Mate in 2', fen:'r5k1/5ppp/8/8/3B4/8/2Q5/4R1K1 w - - 0 1',
+      solution:['c2g2','g8h8','g2a8'],
+      orientation:'white', turn:'white', theme:'Rook on a8 — deflect it first' },
+    { label:'Mate in 2', fen:'4k3/2r1ppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
+      solution:['c5c7','e8f8','c7d8'],
+      orientation:'white', turn:'white', theme:'Rook defender — clearance' },
+    { label:'Mate in 2', fen:'5k2/3rppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
+      solution:['c5c8','d7d8','c8d8'],
+      orientation:'white', turn:'white', theme:'Back rank overload' },
   ],
 };
 
 var DIFF_INFO = {
-  beginner: { label:'★ Beginner', desc:'Mate in 1 — find the winning move',    color:'var(--diff-beg)'  },
-  easy:     { label:'★★ Easy',    desc:'Mate in 2 — one forced reply',          color:'var(--diff-easy)' },
-  medium:   { label:'★★★ Medium', desc:'Mate in 2-3 — multiple defences',       color:'var(--diff-med)'  },
-  hard:     { label:'★★★★ Hard',  desc:'Mate in 3 — extra defenders to beat',   color:'var(--diff-hard)' },
+  tactical: { label:'⚔ Tactical', desc:'Mate in 2-3 — find the combination',  color:'var(--diff-tactical)' },
+  expert:   { label:'★ Expert',   desc:'Mate in 2-3 — beat the defenders',    color:'var(--diff-expert)'   },
 };
 
 // =====================================================================
 // STATE
 // =====================================================================
-var currentDiff   = 'beginner';
+var currentDiff   = 'tactical';
 var PUZZLES       = ALL_PUZZLES[currentDiff].slice();
 var currentIdx    = 0;
 var game, playerMoves=[], allGameMoves=[], dragState=null;
@@ -702,8 +699,15 @@ function runSolveAnimation(){
   banner.classList.add('show');
   setTimeout(function(){
     banner.classList.remove('show'); banner.classList.add('hide');
-    setTimeout(function(){banner.className='';},400);
-  },2000);
+    setTimeout(function(){
+      banner.className='';
+      // Auto-advance to next puzzle after animation completes
+      var nextIdx = (currentIdx + 1) % PUZZLES.length;
+      currentIdx = nextIdx;
+      delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
+      initPuzzle();
+    }, 400);
+  }, 2000);
 }
 
 // =====================================================================
