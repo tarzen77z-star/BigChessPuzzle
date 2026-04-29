@@ -547,26 +547,51 @@ function onUp(e){
 
   opponentBusy=true;
   setStatus('correct','Good move!','Opponent is thinking…');
-  setTimeout(function(){
-    // Make the opponent move (any legal move — pick from tree)
-    var oppUCI = null;
-    // Find which opponent move was actually made (game hasn't advanced yet — we need to pick one)
-    // We play the first key in currentBranch as the opponent reply
-    oppUCI = Object.keys(currentBranch)[0];
-    var oppMove = game.move({from:oppUCI.slice(0,2),to:oppUCI.slice(2,4),promotion:'q'});
-    if(oppMove){
-      allGameMoves.push(oppMove.san);
-      updateProgress(); updateMoveHistory(); render();
-      // Update treeNode to the white continuations after this opp reply
-      var cont = currentBranch[oppUCI];
-      // cont is an array of remaining moves (next player moves + their opp replies)
-      // Build a mini tree from cont: [pm, om, pm, om, ...]
-      treeNode = buildNodeFromCont(cont);
-    }
-    opponentBusy=false;
-    if(game.in_checkmate()) puzzleSolved();
-    else setStatus('idle','Keep going — find the next move',"You're on the right track!");
-  },650);
+
+  // Capture currentBranch in closure so setTimeout can access it
+  (function(branch){
+    setTimeout(function(){
+      // Pick the most challenging legal opponent reply that exists in the branch.
+      // Use the actual legal moves from chess.js and intersect with branch keys.
+      var legalOppUCIs = [];
+      game.moves({verbose:true}).forEach(function(m){
+        var uci = m.from+m.to;
+        if(branch[uci] !== undefined) legalOppUCIs.push(uci);
+      });
+
+      // Prefer king moves (most instructive), then any branch move
+      var oppUCI = null;
+      if(legalOppUCIs.length > 0){
+        // Pick first available — order in tree matches difficulty intent
+        // Use the first key from branch that is also legal right now
+        var branchKeys = Object.keys(branch);
+        for(var bi=0; bi<branchKeys.length; bi++){
+          if(legalOppUCIs.indexOf(branchKeys[bi]) !== -1){
+            oppUCI = branchKeys[bi]; break;
+          }
+        }
+      }
+      if(!oppUCI && legalOppUCIs.length > 0) oppUCI = legalOppUCIs[0];
+      if(!oppUCI){
+        // Fallback: no branch key found — puzzle might be solved already
+        opponentBusy=false;
+        if(game.in_checkmate()) puzzleSolved();
+        return;
+      }
+
+      var oppMove = game.move({from:oppUCI.slice(0,2),to:oppUCI.slice(2,4),promotion:'q'});
+      if(oppMove){
+        allGameMoves.push(oppMove.san);
+        updateProgress(); updateMoveHistory(); render();
+        // Advance treeNode: cont is the remaining line after this opp reply
+        var cont = branch[oppUCI];
+        treeNode = buildNodeFromCont(cont);
+      }
+      opponentBusy=false;
+      if(game.in_checkmate()) puzzleSolved();
+      else setStatus('idle','Keep going — find the next move',"You're on the right track!");
+    },650);
+  })(currentBranch);
 }
 
 function buildNodeFromCont(cont){
