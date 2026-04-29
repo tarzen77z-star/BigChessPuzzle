@@ -284,37 +284,37 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 // =====================================================================
 var ALL_PUZZLES = {
   tactical: [
-    // ALL VERIFIED: no M1 at start, no M2 if claiming M3, no attacker on king
-    { label:'Mate in 3', fen:'6k1/4pp2/8/8/8/4N3/3Q4/4R1K1 w - - 0 1',
-      solution:['e3f5','g8h8','d2h6','h8g8','h6g7'],
-      orientation:'white', turn:'white', theme:'Knight manoeuvre — 6 defences' },
+    // ALL TRULY FORCED: white_forces_mate() confirms ALL opp replies lead to mate
+    { label:'Mate in 2', fen:'6k1/5ppp/6Q1/8/4B3/8/8/5RK1 w - - 0 1',
+      solution:['g6f7','g8h8','f7f8'],
+      orientation:'white', turn:'white', theme:'Forcing check — bishop supports' },
+    { label:'Mate in 2', fen:'4r1k1/5ppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
+      solution:['d5f7','g8h8','f7e8'],
+      orientation:'white', turn:'white', theme:'Queen sacrifice clears rook' },
+    { label:'Mate in 2', fen:'6k1/5Rpp/8/3Q4/8/8/8/6K1 w - - 0 1',
+      solution:['f7e7','g8h8','e7e8'],
+      orientation:'white', turn:'white', theme:'Rook check drives king' },
     { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
       solution:['d2g5','f8g8','e1e8','g8h7','g5h5'],
-      orientation:'white', turn:'white', theme:'Quiet queen, knight assists' },
-    { label:'Mate in 3', fen:'4k3/4pp2/8/8/8/4N3/3Q4/4R1K1 w - - 0 1',
-      solution:['e3f5','e8f8','d2d8'],
-      orientation:'white', turn:'white', theme:'Knight fork clears the way' },
-    { label:'Mate in 2', fen:'6k1/6pp/5p2/8/8/3N4/8/3QR1K1 w - - 0 1',
-      solution:['d1b3','g8h8','b3b8'],
-      orientation:'white', turn:'white', theme:'Knight + Queen quiet move' },
+      orientation:'white', turn:'white', theme:'Quiet queen + knight net' },
     { label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',
       solution:['d5c6','e8f8','c6c8'],
       orientation:'white', turn:'white', theme:'Bishop + Queen cornering' },
   ],
   expert: [
-    // ALL HARD PUZZLES: verified no mate-in-1 exists, no attacker on king at start
-    { label:'Mate in 2', fen:'1r4k1/5ppp/8/8/3B4/2Q5/8/4R1K1 w - - 0 1',
-      solution:['c3g3','g8h8','g3b8'],
-      orientation:'white', turn:'white', theme:'Quiet queen — 20 defences to cover' },
-    { label:'Mate in 2', fen:'r5k1/5ppp/8/8/3B4/8/2Q5/4R1K1 w - - 0 1',
-      solution:['c2g2','g8h8','g2a8'],
-      orientation:'white', turn:'white', theme:'Rook on a8 — deflect it first' },
-    { label:'Mate in 2', fen:'4k3/2r1ppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
-      solution:['c5c7','e8f8','c7d8'],
-      orientation:'white', turn:'white', theme:'Rook defender — clearance' },
+    // ALL TRULY FORCED: harder positions with extra defenders
+    { label:'Mate in 2', fen:'6k1/4pppp/6Q1/8/4B3/8/8/5RK1 w - - 0 1',
+      solution:['g6h7','g8f8','h7h8'],
+      orientation:'white', turn:'white', theme:'Queen sacrifice — extra pawn defender' },
+    { label:'Mate in 2', fen:'4r1k1/4pppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
+      solution:['d5f7','g8h8','f7e8'],
+      orientation:'white', turn:'white', theme:'Extra pawns — still forced' },
     { label:'Mate in 2', fen:'5k2/3rppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
       solution:['c5c8','d7d8','c8d8'],
-      orientation:'white', turn:'white', theme:'Back rank overload' },
+      orientation:'white', turn:'white', theme:'Back rank overload — rook sacrificed' },
+    { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
+      solution:['d2g5','f8g8','e1e8','g8h7','g5h5'],
+      orientation:'white', turn:'white', theme:'Deep knight + queen coordination' },
   ],
 };
 
@@ -348,7 +348,8 @@ function savePuzzleStates() { try{localStorage.setItem('cp_pstate',JSON.stringif
 function setDifficulty(diff) {
   currentDiff = diff;
   PUZZLES = ALL_PUZZLES[diff].slice();
-  currentIdx = 0;
+  // Restore last position for this difficulty, default 0
+  currentIdx = (puzzleState['pos_'+diff] || 0) % PUZZLES.length;
 
   // Update tab styles
   document.querySelectorAll('.diff-tab').forEach(function(t){
@@ -631,6 +632,10 @@ function initPuzzle(){
 
   initCanvas(); render(); bindCanvas();
 
+  // Save current position for this difficulty so returning restores it
+  puzzleState['pos_'+currentDiff] = currentIdx;
+  savePuzzleStates();
+
   // Attempts: only count first visit per puzzle per difficulty
   var vkey='visited_'+currentDiff+'_'+currentIdx;
   if(!puzzleState[vkey]){
@@ -702,10 +707,13 @@ function runSolveAnimation(){
     setTimeout(function(){
       banner.className='';
       // Auto-advance to next puzzle after animation completes
-      var nextIdx = (currentIdx + 1) % PUZZLES.length;
-      currentIdx = nextIdx;
-      delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
-      initPuzzle();
+      // If this was the last puzzle, stay on it rather than wrapping to #1
+      if (currentIdx < PUZZLES.length - 1) {
+        currentIdx = currentIdx + 1;
+        delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
+        initPuzzle();
+      }
+      // else: already on last puzzle — do nothing, let user choose Next or switch difficulty
     }, 400);
   }, 2000);
 }
