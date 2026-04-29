@@ -284,36 +284,45 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 // =====================================================================
 var ALL_PUZZLES = {
   tactical: [
-    // ALL TRULY FORCED: white_forces_mate() confirms ALL opp replies lead to mate
+    // ALL TRULY FORCED — solutionTree covers every opponent reply
     { label:'Mate in 2', fen:'6k1/5ppp/6Q1/8/4B3/8/8/5RK1 w - - 0 1',
-      solution:['g6f7','g8h8','f7f8'],
+      solution:["g6f7","g8h8","f7f8"],
+      solutionTree:{"g6f7":{"g8h8":["f7f8"]}},
       orientation:'white', turn:'white', theme:'Forcing check — bishop supports' },
     { label:'Mate in 2', fen:'4r1k1/5ppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
-      solution:['d5f7','g8h8','f7e8'],
+      solution:["d5f7","g8h8","f7e8"],
+      solutionTree:{"d5f7":{"g8h8":["f7e8"]}},
       orientation:'white', turn:'white', theme:'Queen sacrifice clears rook' },
     { label:'Mate in 2', fen:'6k1/5Rpp/8/3Q4/8/8/8/6K1 w - - 0 1',
-      solution:['f7e7','g8h8','e7e8'],
+      solution:["f7e7","g8h8","e7e8"],
+      solutionTree:{"f7e7":{"g8h8":["e7e8"],"g8f8":["d5d8"]},"f7d7":{"g8h8":["d7d8"],"g8f8":["d5a8"]},"f7c7":{"g8h8":["c7c8"],"g8f8":["d5d8"]},"f7b7":{"g8h8":["b7b8"],"g8f8":["d5d8"]},"f7a7":{"g8h8":["a7a8"],"g8f8":["d5d8"]},"f7f6":{"g8h8":["f6f8"]},"f7f5":{"g8h8":["f5f8"]},"f7f4":{"g8h8":["d5d8"]},"f7f3":{"g8h8":["d5d8"]},"f7f2":{"g8h8":["d5d8"]},"f7f1":{"g8h8":["d5d8"]}},
       orientation:'white', turn:'white', theme:'Rook check drives king' },
     { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
-      solution:['d2g5','f8g8','e1e8','g8h7','g5h5'],
+      solution:["d2g5","f8g8","e1e8","g8h7","g5h5"],
+      solutionTree:{"d2g5":{"f8g8":["e1e8","g8h7","g5h5"],"g7g6":["g5h6","f8g8","e1e8"],"f7f6":["g5g6","f8g8","e1e8"],"f7f5":["g5g6","f8g8","e1e8"]}},
       orientation:'white', turn:'white', theme:'Quiet queen + knight net' },
     { label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',
-      solution:['d5c6','e8f8','c6c8'],
+      solution:["d5c6","e8f8","c6c8"],
+      solutionTree:{"d5c6":{"e8f8":["c6c8"],"e8d8":["d4b6"]}},
       orientation:'white', turn:'white', theme:'Bishop + Queen cornering' },
   ],
   expert: [
-    // ALL TRULY FORCED: harder positions with extra defenders
+    // ALL TRULY FORCED — solutionTree covers every opponent reply
     { label:'Mate in 2', fen:'6k1/4pppp/6Q1/8/4B3/8/8/5RK1 w - - 0 1',
-      solution:['g6h7','g8f8','h7h8'],
+      solution:["g6h7","g8f8","h7h8"],
+      solutionTree:{"g6h7":{"g8f8":["h7h8"]},"g6f7":{"g8h8":["f7f8"]}},
       orientation:'white', turn:'white', theme:'Queen sacrifice — extra pawn defender' },
     { label:'Mate in 2', fen:'4r1k1/4pppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
-      solution:['d5f7','g8h8','f7e8'],
+      solution:["d5f7","g8h8","f7e8"],
+      solutionTree:{"d5f7":{"g8h8":["f7e8"]}},
       orientation:'white', turn:'white', theme:'Extra pawns — still forced' },
     { label:'Mate in 2', fen:'5k2/3rppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
-      solution:['c5c8','d7d8','c8d8'],
+      solution:["c5c8","d7d8","c8d8"],
+      solutionTree:{"c5c8":{"d7d8":["c8d8"]}},
       orientation:'white', turn:'white', theme:'Back rank overload — rook sacrificed' },
     { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
-      solution:['d2g5','f8g8','e1e8','g8h7','g5h5'],
+      solution:["d2g5","f8g8","e1e8","g8h7","g5h5"],
+      solutionTree:{"d2g5":{"f8g8":["e1e8","g8h7","g5h5"],"g7g6":["g5h6","f8g8","e1e8"],"f7f6":["g5g6","f8g8","e1e8"],"f7f5":["g5g6","f8g8","e1e8"]}},
       orientation:'white', turn:'white', theme:'Deep knight + queen coordination' },
   ],
 };
@@ -333,6 +342,7 @@ var game, playerMoves=[], allGameMoves=[], dragState=null;
 var hintSquare=null, hintTimer=null, opponentBusy=false, solutionVisible=false;
 var puzzleState={}, stats={};
 var canvas, ctx, SQ=0;
+var treeNode = null;  // current position in solution tree
 
 // =====================================================================
 // PERSISTENCE
@@ -492,14 +502,30 @@ function onUp(e){
   dragState=null;
   if(toSq===fromSq){render();return;}
 
-  var solIdx=playerMoves.length*2;
-  if(solIdx>=p.solution.length){render();return;}
-  var expected=p.solution[solIdx];
-  var move=game.move({from:fromSq,to:toSq,promotion:'q'});
+  // Use solutionTree for multi-branch puzzles
+  var tree = p.solutionTree || null;
+  var move = game.move({from:fromSq,to:toSq,promotion:'q'});
   if(!move){render();return;}
-  var made=move.from+move.to;
+  var made = move.from+move.to;
 
-  if(made!==expected){
+  // Validate player move against tree or linear solution
+  var isCorrect = false;
+  var currentBranch = null;  // the branch dict for this player move
+
+  if(tree){
+    // Tree mode: look up player move in current tree node
+    var node = treeNode;  // current position in tree
+    if(node && node[made]){
+      isCorrect = true;
+      currentBranch = node[made];  // opp replies -> white continuations
+    }
+  } else {
+    // Linear fallback
+    var solIdx = playerMoves.length*2;
+    if(made === (p.solution[solIdx]||'')) isCorrect = true;
+  }
+
+  if(!isCorrect){
     game.undo(); render();
     setStatus('wrong','Not the best move — try again','Look for the most forcing move');
     var wrap=document.getElementById('boardWrap'); wrap.classList.add('shake');
@@ -511,20 +537,46 @@ function onUp(e){
   allGameMoves.push(move.san); playerMoves.push(made);
   updateProgress(); updateMoveHistory(); render();
 
-  var nextIdx=solIdx+1;
-  if(nextIdx>=p.solution.length){puzzleSolved();return;}
+  // Check if this was the mating move
+  if(game.in_checkmate()){puzzleSolved();return;}
+
+  // Opponent replies — look up in tree branch
+  if(!currentBranch || Object.keys(currentBranch).length===0){
+    puzzleSolved(); return;
+  }
 
   opponentBusy=true;
   setStatus('correct','Good move!','Opponent is thinking…');
   setTimeout(function(){
-    var oppUCI=p.solution[nextIdx];
-    var oppMove=game.move({from:oppUCI.slice(0,2),to:oppUCI.slice(2,4),promotion:'q'});
-    if(oppMove){allGameMoves.push(oppMove.san);updateProgress();updateMoveHistory();render();}
+    // Make the opponent move (any legal move — pick from tree)
+    var oppUCI = null;
+    // Find which opponent move was actually made (game hasn't advanced yet — we need to pick one)
+    // We play the first key in currentBranch as the opponent reply
+    oppUCI = Object.keys(currentBranch)[0];
+    var oppMove = game.move({from:oppUCI.slice(0,2),to:oppUCI.slice(2,4),promotion:'q'});
+    if(oppMove){
+      allGameMoves.push(oppMove.san);
+      updateProgress(); updateMoveHistory(); render();
+      // Update treeNode to the white continuations after this opp reply
+      var cont = currentBranch[oppUCI];
+      // cont is an array of remaining moves (next player moves + their opp replies)
+      // Build a mini tree from cont: [pm, om, pm, om, ...]
+      treeNode = buildNodeFromCont(cont);
+    }
     opponentBusy=false;
-    var afterOpp=nextIdx+1;
-    if(afterOpp>=p.solution.length) puzzleSolved();
+    if(game.in_checkmate()) puzzleSolved();
     else setStatus('idle','Keep going — find the next move',"You're on the right track!");
   },650);
+}
+
+function buildNodeFromCont(cont){
+  // cont = [player_uci, opp_uci, player_uci, ...] linear sequence
+  // Convert to a 1-level tree: {player_uci: {opp_uci: rest}}
+  if(!cont || cont.length===0) return null;
+  if(cont.length===1) return {[cont[0]]:{}};  // last player move (checkmate)
+  var node = {};
+  node[cont[0]] = {[cont[1]]: cont.slice(2)};
+  return node;
 }
 
 // =====================================================================
@@ -610,6 +662,7 @@ function initPuzzle(){
   var p=getPuzzle();
   game=new Chess(p.fen);
   playerMoves=[]; allGameMoves=[]; dragState=null; opponentBusy=false; solutionVisible=false;
+  treeNode = getPuzzle().solutionTree || null;  // reset to root of tree
   if(hintTimer) clearTimeout(hintTimer); hintSquare=null;
 
   // Badge with difficulty colour
@@ -722,9 +775,18 @@ function runSolveAnimation(){
 // CONTROLS
 // =====================================================================
 function showHint(){
-  var p=getPuzzle(), solIdx=playerMoves.length*2;
-  if(solIdx>=p.solution.length) return;
-  hintSquare=p.solution[solIdx].slice(0,2); render();
+  var p=getPuzzle();
+  // Get current player move from tree or linear solution
+  var hintMove = null;
+  if(treeNode){
+    var keys = Object.keys(treeNode);
+    if(keys.length > 0) hintMove = keys[0];
+  } else {
+    var solIdx=playerMoves.length*2;
+    if(solIdx<p.solution.length) hintMove=p.solution[solIdx];
+  }
+  if(!hintMove) return;
+  hintSquare=hintMove.slice(0,2); render();
   if(hintTimer) clearTimeout(hintTimer);
   hintTimer=setTimeout(function(){hintSquare=null;render();},1600);
   setStatus('thinking','Hint: move the highlighted piece','Look for the most forcing follow-up');
@@ -737,6 +799,7 @@ function showSolution(){
   body.style.display=solutionVisible?'flex':'none';
   lbl.textContent=solutionVisible?'shown':'hidden';
   if(solutionVisible){
+    // Show main line from solution array
     var g2=new Chess(p.fen);
     moves.innerHTML=p.solution.map(function(uci,i){
       var mv=g2.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:'q'});
