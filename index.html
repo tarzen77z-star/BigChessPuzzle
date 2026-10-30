@@ -332,60 +332,36 @@ var ALL_PUZZLES = {
   ],
 };
 
-// CLASSICS — the unique-solution subset of the hand-written puzzles.
+// CLASSICS — the unique-solution subset of the hand-written puzzles, copied
+// verbatim from the original set (solution line + tree + FEN + theme).
 // Dropped from the old set: the rook puzzle with 11 winning first moves,
 // the Expert queen puzzle with 2 solutions, and the duplicated Mate-in-3.
 // Used only as the offline fallback when Lichess is unreachable.
 var CLASSICS = [
-  {
-    label:'Mate in 2', fen:'6k1/5ppp/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'queen-sacrifice',
-    solutionTree:{
-      'Qf7':{'Kg8':{'Qe8':{}},'Kh8':{'Qh7':{}}}
-    }
-  },
-  {
-    label:'Mate in 2', fen:'4r1k1/5ppp/8/8/8/8/5R2/3QK3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'rook-sacrifice',
-    solutionTree:{
-      'Rf8':{'Rxf8':{'Qd8':{}}}
-    }
-  },
-  {
-    label:'Mate in 3', fen:'5k2/5pp1/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'queen-maneuver',
-    solutionTree:{
-      'Qd8':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}},'Kh6':{'Qf6':{}}}}},
-      'Qd7':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
-      'Qd6':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
-      'Qd5':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
-      'Qd4':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
-      'Qd3':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
-      'Qd2':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
-      'Qd1':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}}
-    }
-  },
-  {
-    label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'bishop-queen',
-    solutionTree:{
-      'Qd8':{'Ke7':{'Qe8':{}},'Kf7':{'Qe7':{}}}
-    }
-  },
-  {
-    label:'Mate in 2', fen:'4r1k1/4pppp/8/8/8/8/5R2/3QK3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'rook-sacrifice',
-    solutionTree:{
-      'Rf8':{'Rxf8':{'Qd8':{}}}
-    }
-  },
-  {
-    label:'Mate in 2', fen:'5k2/3rppp1/8/8/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
-    theme:'back-rank',
-    solutionTree:{
-      'Qd8':{'Rxd8':{'Qe8':{}}}
-    }
-  },
+  { label:'Mate in 2', fen:'6k1/5ppp/6Q1/8/4B3/8/8/5RK1 w - - 0 1',
+    solution:["g6f7","g8h8","f7f8"],
+    solutionTree:{"g6f7":{"g8h8":["f7f8"]}},
+    orientation:'white', turn:'white', theme:'Forcing check — bishop supports' },
+  { label:'Mate in 2', fen:'4r1k1/5ppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
+    solution:["d5f7","g8h8","f7e8"],
+    solutionTree:{"d5f7":{"g8h8":["f7e8"]}},
+    orientation:'white', turn:'white', theme:'Queen sacrifice clears rook' },
+  { label:'Mate in 3', fen:'5k2/5pp1/8/8/8/3N4/3Q4/4R1K1 w - - 0 1',
+    solution:["d2g5","f8g8","e1e8","g8h7","g5h5"],
+    solutionTree:{"d2g5":{"f8g8":["e1e8","g8h7","g5h5"],"g7g6":["g5h6","f8g8","e1e8"],"f7f6":["g5g6","f8g8","e1e8"],"f7f5":["g5g6","f8g8","e1e8"]}},
+    orientation:'white', turn:'white', theme:'Quiet queen + knight net' },
+  { label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/3B4/8/8/4K3 w - - 0 1',
+    solution:["d5c6","e8f8","c6c8"],
+    solutionTree:{"d5c6":{"e8f8":["c6c8"],"e8d8":["d4b6"]}},
+    orientation:'white', turn:'white', theme:'Bishop + Queen cornering' },
+  { label:'Mate in 2', fen:'4r1k1/4pppp/8/3Q4/8/8/8/5RK1 w - - 0 1',
+    solution:["d5f7","g8h8","f7e8"],
+    solutionTree:{"d5f7":{"g8h8":["f7e8"]}},
+    orientation:'white', turn:'white', theme:'Extra pawns — still forced' },
+  { label:'Mate in 2', fen:'5k2/3rppp1/8/2Q5/3B4/8/8/4R1K1 w - - 0 1',
+    solution:["c5c8","d7d8","c8d8"],
+    solutionTree:{"c5c8":{"d7d8":["c8d8"]}},
+    orientation:'white', turn:'white', theme:'Back rank overload — rook sacrificed' },
 ];
 
 // Difficulty info: Lichess feed (default) + Classics fallback
@@ -721,13 +697,13 @@ function setStatus(type,title,sub){
 function buildDots(){
   var p=getPuzzle(), dots=document.getElementById('moveDots');
   dots.innerHTML='';
-  for(var i=0;i<p.solution.length;i++){
+  for(var i=0;i<(p.solution||[]).length;i++){
     var d=document.createElement('div'); d.className='move-dot'; d.id='dot_'+i; dots.appendChild(d);
   }
 }
 
 function updateProgress(){
-  var p=getPuzzle(), total=p.solution.length, done=allGameMoves.length;
+  var p=getPuzzle(), total=(p.solution||[]).length, done=allGameMoves.length;
   document.getElementById('progressFill').style.width=(total>0?Math.round(done/total*100):0)+'%';
   for(var i=0;i<total;i++){
     var d=document.getElementById('dot_'+i);
@@ -906,6 +882,24 @@ function runSolveAnimation(){
 // In Lichess mode it appends to the session list; otherwise it is shown
 // immediately (same as the "Load from Lichess" button). On failure with an
 // empty session, the app falls back to the Classics set.
+// For linear (Lichess) puzzles: work out the goal label from the solution line.
+// Plays the line on a scratch board: if it ends in checkmate -> "Mate in N",
+// otherwise -> "Win in N" (N = your moves in the line). Returns null if the
+// line cannot be replayed (badge then shows rating only).
+function linearGoalLabel(fen, solution){
+  if(!solution || !solution.length) return null;
+  try{
+    var b = new Chess(fen);
+    for(var i=0;i<solution.length;i++){
+      var u = solution[i];
+      var mv = b.move({from:u.slice(0,2), to:u.slice(2,4), promotion:u.length>4 ? u[4] : 'q'});
+      if(!mv) return null;
+    }
+    var n = Math.ceil(solution.length/2);
+    return b.in_checkmate() ? ('Mate in ' + n) : ('Win in ' + n);
+  }catch(e){ return null; }
+}
+
 var lichessLoading = false;
 function fetchNextLichess(){
   if(lichessLoading) return;
@@ -918,8 +912,9 @@ function fetchNextLichess(){
       var fen = buildFenFromPGN(gd.pgn, puz.initialPly + 1);
       if(!fen) throw new Error('Bad FEN');
       var tmp = new Chess(fen), turn = tmp.turn() === 'w' ? 'white' : 'black';
+      var goal = linearGoalLabel(fen, puz.solution);
       var np = {
-        label: 'Lichess · ' + (puz.rating || '?'),
+        label: 'Lichess · ' + (puz.rating || '?') + (goal ? ' · ' + goal : ''),
         fen: fen, solution: puz.solution, orientation: turn, turn: turn,
         theme: (puz.themes && puz.themes[0]) || 'tactics', rating: puz.rating || '?'
       };
@@ -1026,7 +1021,8 @@ function loadLichessPuzzle(){
       var fen=buildFenFromPGN(gd.pgn,puz.initialPly+1);
       if(!fen) throw new Error('Bad FEN');
       var tmp=new Chess(fen), turn=tmp.turn()==='w'?'white':'black';
-      var np={label:'Lichess Puzzle',fen:fen,solution:puz.solution,orientation:turn,turn:turn,
+      var goal=linearGoalLabel(fen,puz.solution);
+      var np={label:'Lichess · '+(puz.rating||'?')+(goal?' · '+goal:''),fen:fen,solution:puz.solution,orientation:turn,turn:turn,
         theme:(puz.themes||['tactics'])[0]||'tactics',rating:puz.rating||'?'};
       PUZZLES.unshift(np); currentIdx=0;
       document.getElementById('fetchRating').textContent=np.rating;
