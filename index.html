@@ -94,6 +94,23 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600}
 .btn.primary:hover{background:var(--gold2);border-color:var(--gold2)}
 .btn.icon-btn{flex:0 0 44px;padding:11px;font-size:15px}
+.board-status{display:none}
+@media(max-width:700px){
+  .board-status{display:block;margin-top:12px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);text-align:center;min-height:38px}
+  .board-status #boardStatusTitle{font-size:13px;font-weight:500;color:var(--text)}
+  .board-status #boardStatusSub{display:block;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:2px}
+}
+.howto-body{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.howto-body p{font-size:13px;line-height:1.5;color:var(--text2);margin:0}
+.howto-body b{color:var(--text)}
+.howto-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 2px}
+.howto-close:hover{color:var(--text)}
+.today-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.goal-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text)}
+.goal-track{height:8px;background:var(--bg3);border-radius:100px;overflow:hidden}
+.goal-fill{height:100%;background:var(--gold);border-radius:100px;width:0%;transition:width 0.3s}
+.goal-stats{display:flex;justify-content:space-between;font-size:12px;color:var(--text2)}
+.goal-stats b{color:var(--text)}
 
 /* RIGHT PANEL */
 .right-panel{display:flex;flex-direction:column;gap:16px}
@@ -178,7 +195,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
     <div class="stats-bar">
       <div class="stat-pill">Solved <span class="val" id="solvedCount">0</span></div>
-      <div class="stat-pill">Attempts <span class="val" id="attemptsCount">0</span></div>
+      <div class="stat-pill">Misses <span class="val" id="attemptsCount">0</span></div>
       <div class="stat-pill streak" id="streakPill">Streak <span class="val" id="streakCount">0</span> 🔥</div>
     </div>
   </header>
@@ -215,6 +232,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           <div class="banner-sub" id="bannerSub">Excellent play</div>
         </div>
       </div>
+      <div class="board-status" id="boardStatus"><span id="boardStatusTitle">Find the winning sequence</span><span id="boardStatusSub">Drag a piece to make your move</span></div>
       <div class="move-progress">
         <span class="progress-label">Progress</span>
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -222,14 +240,23 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
       <div class="controls">
         <button class="btn" id="prevBtn" onclick="prevPuzzle()" disabled>← Prev</button>
-        <button class="btn icon-btn" id="hintBtn" onclick="showHint()" title="Hint">💡</button>
-        <button class="btn icon-btn" onclick="showSolution()" title="Toggle solution">👁</button>
+        <button class="btn" id="hintBtn" onclick="showHint()" title="Hint">💡 Hint</button>
+        <button class="btn" onclick="showSolution()" title="Show the solution line">👁 Line</button>
         <button class="btn" onclick="resetPuzzle()">↺ Reset</button>
         <button class="btn primary" onclick="nextPuzzle()">Next →</button>
       </div>
     </div>
 
     <div class="right-panel">
+      <!-- How to play -->
+      <div class="panel-card" id="howtoCard">
+        <div class="card-header"><span>How to play</span><button class="howto-close" onclick="hideHowto()" title="Hide this card">×</button></div>
+        <div class="howto-body">
+          <p>Find the winning line. The badge tells you the goal: <b>Mate in N</b> means checkmate, <b>Win in N</b> means win material or a winning position.</p>
+          <p>Drag a piece to move. 💡 highlights the piece to move. 👁 shows the line — but peeking ends your streak.</p>
+          <p><b>Lichess</b> is endless rated puzzles — a new one on every Next. <b>Classics</b> is 6 hand-picked mates.</p>
+        </div>
+      </div>
       <!-- Status -->
       <div class="panel-card">
         <div class="card-header"><span>Status</span><span id="themeLabel" style="color:var(--text2);font-size:10px"></span></div>
@@ -242,23 +269,22 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         </div>
       </div>
 
+      <!-- Today -->
+      <div class="panel-card">
+        <div class="card-header"><span>Today</span><span id="goalLabel" style="color:var(--text2);font-size:10px"></span></div>
+        <div class="today-body">
+          <div class="goal-row"><span id="goalCount">0 / 5 solved</span><span id="goalDone" style="display:none">🎉 Goal reached!</span></div>
+          <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+          <div class="goal-stats"><span>Accuracy <b id="accuracyVal">—</b></span><span>Best streak <b id="bestStreakVal">0</b></span></div>
+        </div>
+      </div>
+
       <!-- Move history -->
       <div class="panel-card">
         <div class="card-header"><span>Move history</span><span id="moveCount" style="color:var(--text2)">0 moves</span></div>
         <div class="history-body" id="moveHistoryBody">
           <div class="history-empty" id="historyEmpty">No moves yet</div>
           <div class="move-list" id="moveList"></div>
-        </div>
-      </div>
-
-      <!-- Lichess -->
-      <div class="panel-card">
-        <div class="card-header"><span>Lichess puzzles</span></div>
-        <div class="lichess-body">
-          <p class="source-label">Load real rated puzzles from the Lichess open database.</p>
-          <button class="lichess-btn" id="lichessBtn" onclick="loadLichessPuzzle()">♞ Load from Lichess</button>
-          <div class="lichess-note" id="lichessNote">Requires internet connection</div>
-          <div class="fetched-info" id="fetchedInfo">Rating: <span id="fetchRating">—</span> &nbsp;|&nbsp; Theme: <span id="fetchTheme">—</span></div>
         </div>
       </div>
 
@@ -411,9 +437,6 @@ function setDifficulty(diff) {
   document.getElementById('diffDesc').textContent = DIFF_INFO[diff].desc;
   var gridTitle = document.querySelector('.section-title');
   if(gridTitle) gridTitle.textContent = diff === 'lichess' ? 'Puzzles this session' : 'Puzzles in this set';
-
-  // Clear visited flags for this difficulty set
-  PUZZLES.forEach(function(_,i){ delete puzzleState['visited_'+diff+'_'+i]; });
 
   // Lichess feed with nothing fetched yet: fetch the first puzzle
   if(diff === 'lichess' && PUZZLES.length === 0){
@@ -579,6 +602,8 @@ function onUp(e){
 
   if(!isCorrect){
     game.undo(); render();
+    attemptWrongs++;
+    stats.attempts=(stats.attempts||0)+1; saveStats(); updateStatsUI();
     setStatus('wrong','Not the best move — try again','Look for the most forcing move');
     var wrap=document.getElementById('boardWrap'); wrap.classList.add('shake');
     setTimeout(function(){wrap.classList.remove('shake');},400);
@@ -692,6 +717,11 @@ function setStatus(type,title,sub){
   document.getElementById('statusIcon').textContent=icons[type]||'♟';
   document.getElementById('statusTitle').textContent=title;
   document.getElementById('statusSub').textContent=sub;
+  // Mirror into the under-board status line (the only feedback visible on phones)
+  var bst=document.getElementById('boardStatusTitle');
+  if(bst) bst.textContent=title;
+  var bss=document.getElementById('boardStatusSub');
+  if(bss) bss.textContent=sub||'';
 }
 
 function buildDots(){
@@ -732,7 +762,6 @@ function buildPuzzleGrid(){
     var div=document.createElement('div');
     div.className='history-item'+(solved?' solved':'')+(current?' current':'');
     div.onclick=(function(idx){return function(){
-      delete puzzleState['visited_'+currentDiff+'_'+idx];
       currentIdx=idx; initPuzzle();
     };})(i);
     div.innerHTML='<div class="hi-dot '+(solved?'solved':current?'current':'')+'"></div>'
@@ -749,6 +778,38 @@ function updateStatsUI(){
   document.getElementById('streakPill').className='stat-pill streak'+((stats.streak||0)>=3?' hot':'');
 }
 
+// Daily goal (5 solves) + accuracy + best streak, shown in the Today card.
+function todayStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+function rolloverToday(){
+  var t=todayStr();
+  if(stats.todayDate!==t){ stats.todayDate=t; stats.today=0; }
+}
+function updateTodayCard(){
+  rolloverToday();
+  var goal=5, done=stats.today||0;
+  var gc=document.getElementById('goalCount');
+  if(gc) gc.textContent=done+' / '+goal+' solved';
+  var gf=document.getElementById('goalFill');
+  if(gf) gf.style.width=Math.min(100,Math.round(done/goal*100))+'%';
+  var gd=document.getElementById('goalDone');
+  if(gd) gd.style.display=done>=goal?'inline':'none';
+  var gl=document.getElementById('goalLabel');
+  if(gl) gl.textContent=done>=goal?'goal reached':'daily goal '+goal;
+  var av=document.getElementById('accuracyVal');
+  if(av) av.textContent=(stats.solved||0)>0?Math.round((stats.firstTry||0)/(stats.solved||0)*100)+'%':'—';
+  var bs=document.getElementById('bestStreakVal');
+  if(bs) bs.textContent=stats.bestStreak||0;
+}
+
+function hideHowto(){
+  var c=document.getElementById('howtoCard');
+  if(c) c.style.display='none';
+  try{localStorage.setItem('cp_howto_hidden','1');}catch(e){}
+}
+
 // =====================================================================
 // INIT PUZZLE
 // =====================================================================
@@ -759,6 +820,8 @@ function bindCanvas(){
   canvas.addEventListener('mousedown',onDown); canvas.addEventListener('mousemove',onMove); canvas.addEventListener('mouseup',onUp);
   canvas.addEventListener('touchstart',onDown,{passive:false}); canvas.addEventListener('touchmove',onMove,{passive:false}); canvas.addEventListener('touchend',onUp,{passive:false});
 }
+
+var attemptWrongs = 0;  // wrong moves on the current puzzle attempt (for first-try + Misses)
 
 function initPuzzle(){
   var p=getPuzzle();
@@ -780,7 +843,8 @@ function initPuzzle(){
   document.getElementById('solutionBody').style.display='none';
   document.getElementById('solutionMoves').innerHTML='';
   document.getElementById('solLabel').textContent='hidden';
-  document.getElementById('fetchedInfo').style.display='none';
+  var fi0=document.getElementById('fetchedInfo');
+  if(fi0) fi0.style.display='none';
 
   buildDots(); updateProgress(); updateMoveHistory(); buildPuzzleGrid();
   setStatus('idle','Find the winning sequence',p.theme||'Drag a piece to make your move');
@@ -791,13 +855,9 @@ function initPuzzle(){
   puzzleState['pos_'+currentDiff] = currentIdx;
   savePuzzleStates();
 
-  // Attempts: only count first visit per puzzle per difficulty
-  var vkey='visited_'+currentDiff+'_'+currentIdx;
-  if(!puzzleState[vkey]){
-    puzzleState[vkey]=true;
-    stats.attempts=(stats.attempts||0)+1;
-    saveStats(); updateStatsUI();
-  }
+  // Fresh attempt at this puzzle: wrong moves on this attempt don't count yet
+  attemptWrongs=0;
+  updateTodayCard();
 }
 
 // =====================================================================
@@ -805,20 +865,26 @@ function initPuzzle(){
 // =====================================================================
 function puzzleSolved(){
   var key=currentDiff+'_'+currentIdx;
+  var firstTry=(attemptWrongs===0);
   if(puzzleState[key]!=='solved'){
     puzzleState[key]='solved'; savePuzzleStates();
     stats.solved=(stats.solved||0)+1;
     stats.streak=(stats.streak||0)+1;
     if(stats.streak>(stats.bestStreak||0)) stats.bestStreak=stats.streak;
-    saveStats(); updateStatsUI();
+    if(firstTry) stats.firstTry=(stats.firstTry||0)+1;
+    rolloverToday();
+    stats.today=(stats.today||0)+1;
+    saveStats(); updateStatsUI(); updateTodayCard();
   }
-  setStatus('done','★ Puzzle solved!','Excellent — you found the winning line');
+  var recap='Solved in '+playerMoves.length+' move'+(playerMoves.length!==1?'s':'')
+    +(firstTry?' — first try!':'')+' · '+allGameMoves.join(' ');
+  setStatus('done','★ Puzzle solved!',recap);
   document.getElementById('hintBtn').disabled=true;
   buildPuzzleGrid();
-  runSolveAnimation();
+  runSolveAnimation(recap);
 }
 
-function runSolveAnimation(){
+function runSolveAnimation(recap){
   // 1. Board glow
   var wrap=document.getElementById('boardWrap');
   wrap.classList.remove('solve-glow'); void wrap.offsetWidth;
@@ -851,10 +917,10 @@ function runSolveAnimation(){
   }
   requestAnimationFrame(animP);
 
-  // 3. Banner
+  // 3. Banner — show the recap line (the moves you played)
   var banner=document.getElementById('solveBanner');
   var msgs=['Excellent play!','You found it!','Brilliant!','Well done!','Perfect!','Spot on!'];
-  document.getElementById('bannerSub').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  document.getElementById('bannerSub').textContent=recap||msgs[Math.floor(Math.random()*msgs.length)];
   banner.className=''; void banner.offsetWidth;
   banner.classList.add('show');
   setTimeout(function(){
@@ -867,8 +933,10 @@ function runSolveAnimation(){
         fetchNextLichess();
       } else if (currentIdx < PUZZLES.length - 1) {
         currentIdx = currentIdx + 1;
-        delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
         initPuzzle();
+      } else if (currentDiff === 'classic') {
+        // Last Classics puzzle solved: celebrate the set, don't silently sit here
+        setStatus('done','★ Classics complete!','All 6 solved — switch to Lichess for endless puzzles');
       }
       // else: already on last puzzle — do nothing, let user choose Next or switch difficulty
     }, 400);
@@ -926,9 +994,9 @@ function fetchNextLichess(){
         PUZZLES.unshift(np);
         currentIdx = 0;
       }
-      document.getElementById('fetchRating').textContent = np.rating;
-      document.getElementById('fetchTheme').textContent = np.theme;
-      document.getElementById('fetchedInfo').style.display = 'flex';
+      var fr=document.getElementById('fetchRating'); if(fr) fr.textContent = np.rating;
+      var ft=document.getElementById('fetchTheme'); if(ft) ft.textContent = np.theme;
+      var fi=document.getElementById('fetchedInfo'); if(fi) fi.style.display = 'flex';
       initPuzzle();
     })
     .catch(function(err){
@@ -967,6 +1035,9 @@ function showHint(){
 function showSolution(){
   var p=getPuzzle(), body=document.getElementById('solutionBody');
   var moves=document.getElementById('solutionMoves'), lbl=document.getElementById('solLabel');
+  if(!solutionVisible && puzzleState[currentDiff+'_'+currentIdx]!=='solved' && (stats.streak||0)>0){
+    if(!confirm('Peeking shows the solution line and ends your streak. Peek anyway?')) return;
+  }
   solutionVisible=!solutionVisible;
   body.style.display=solutionVisible?'flex':'none';
   lbl.textContent=solutionVisible?'shown':'hidden';
@@ -995,14 +1066,12 @@ function nextPuzzle(){
     return;
   }
   currentIdx=(currentIdx+1)%PUZZLES.length;
-  delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
   initPuzzle();
 }
 
 function prevPuzzle(){
   if(currentIdx>0){
     currentIdx--;
-    delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
     initPuzzle();
   }
 }
@@ -1010,34 +1079,7 @@ function prevPuzzle(){
 // =====================================================================
 // LICHESS
 // =====================================================================
-function loadLichessPuzzle(){
-  var btn=document.getElementById('lichessBtn'), note=document.getElementById('lichessNote');
-  btn.disabled=true; btn.textContent='⧗ Loading…'; note.textContent='Fetching from lichess.org…';
-  setStatus('loading','Loading from Lichess…','Fetching a real rated puzzle');
-  fetch('https://lichess.org/api/puzzle/next',{headers:{Accept:'application/json'}})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(data){
-      var puz=data.puzzle, gd=data.game;
-      var fen=buildFenFromPGN(gd.pgn,puz.initialPly+1);
-      if(!fen) throw new Error('Bad FEN');
-      var tmp=new Chess(fen), turn=tmp.turn()==='w'?'white':'black';
-      var goal=linearGoalLabel(fen,puz.solution);
-      var np={label:'Lichess · '+(puz.rating||'?')+(goal?' · '+goal:''),fen:fen,solution:puz.solution,orientation:turn,turn:turn,
-        theme:(puz.themes||['tactics'])[0]||'tactics',rating:puz.rating||'?'};
-      PUZZLES.unshift(np); currentIdx=0;
-      document.getElementById('fetchRating').textContent=np.rating;
-      document.getElementById('fetchTheme').textContent=np.theme;
-      document.getElementById('fetchedInfo').style.display='flex';
-      note.textContent='Loaded puzzle #'+puz.id;
-      initPuzzle();
-    })
-    .catch(function(err){
-      note.textContent='Failed — check internet connection';
-      setStatus('wrong','Could not load Lichess puzzle','Check your internet connection');
-      setTimeout(function(){setStatus('idle','Find the winning sequence',getPuzzle().theme||'');},2500);
-    })
-    .finally(function(){btn.disabled=false;btn.textContent='♞ Load from Lichess';});
-}
+// (The old "Load from Lichess" button was removed: the Lichess feed now loads puzzles automatically.)
 
 // Build the puzzle FEN by replaying a game's PGN.
 // NOTE: Lichess's initialPly counts the moves BEFORE the puzzle position's
@@ -1057,12 +1099,14 @@ function buildFenFromPGN(pgn,targetPly){
 // =====================================================================
 stats=loadStats(); puzzleState=loadPuzzleStates();
 if(!stats.solved)stats.solved=0;
-if(!stats.attempts)stats.attempts=0;
 if(!stats.streak)stats.streak=0;
 if(!stats.bestStreak)stats.bestStreak=0;
-// Auto-correct inflated attempts from old buggy sessions
-if(stats.attempts>(stats.solved||0)*15){stats.attempts=stats.solved||0;saveStats();}
+// Misses now counts wrong moves (it used to count puzzles opened, which was
+// misleading and inflated by navigation). Reset it once on this new meaning.
+if(!stats.attemptsV2){stats.attempts=0; stats.attemptsV2=true; saveStats();}
 updateStatsUI();
+// Hide the how-to card if the player dismissed it before
+try{if(localStorage.getItem('cp_howto_hidden')){var hc=document.getElementById('howtoCard'); if(hc) hc.style.display='none';}}catch(e){}
 // Init difficulty tabs
 document.getElementById('diffDesc').textContent=DIFF_INFO[currentDiff].desc;
 window.addEventListener('load',function(){setDifficulty('lichess');});
