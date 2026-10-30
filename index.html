@@ -456,7 +456,11 @@ function initCanvas(){
   canvas=document.getElementById('chessCanvas');
   ctx=canvas.getContext('2d');
   var sz=document.getElementById('boardWrap').clientWidth;
-  canvas.width=sz; canvas.height=sz; SQ=sz/8;
+  // Full device-pixel backing store so pieces stay crisp on retina phones
+  // (drawing coordinates stay in CSS pixels; the transform maps them up).
+  var dpr=window.devicePixelRatio||1;
+  canvas.width=Math.round(sz*dpr); canvas.height=Math.round(sz*dpr); SQ=sz/8;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
 function sqName(f,r){return 'abcdefgh'[f]+(r+1);}
@@ -506,17 +510,20 @@ function drawLegalDots(ori){
 }
 
 function drawPiece(key,cx,cy,sz){
-  var sym=PIECES[key]; if(!sym) return;
+  // Use the FILLED glyph shape for both colors: the white outline glyphs
+  // (♔♙) are hollow, so brown showed through and white read as black.
+  // A solid white shape with a dark rim reads as white on any square.
+  var sym=PIECES['b'+key[1]]||PIECES[key]; if(!sym) return;
   ctx.font=sz+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineWidth=Math.max(2,sz*0.09);
-  ctx.strokeStyle=key[0]==='w'?'rgba(0,0,0,0.6)':'rgba(255,255,255,0.22)';
+  ctx.lineWidth=Math.max(2,sz*0.10);
+  ctx.strokeStyle=key[0]==='w'?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.45)';
   ctx.strokeText(sym,cx,cy);
   ctx.fillStyle=key[0]==='w'?'#fffde7':'#1a1208';
   ctx.fillText(sym,cx,cy);
 }
 
 function drawPieces(ori){
-  var brd=game.board(), sz=Math.round(SQ*0.76);
+  var brd=game.board(), sz=Math.round(SQ*0.84);
   for(var rank=0;rank<8;rank++) for(var file=0;file<8;file++){
     var piece=brd[7-rank][file]; if(!piece) continue;
     var sq=sqName(file,rank);
@@ -545,9 +552,11 @@ function render(){
 // POINTER / TOUCH
 // =====================================================================
 function canvasXY(e){
-  var rect=canvas.getBoundingClientRect(),scx=canvas.width/rect.width,scy=canvas.height/rect.height;
+  var rect=canvas.getBoundingClientRect();
   var src=(e.touches&&e.touches.length)?e.touches[0]:(e.changedTouches&&e.changedTouches.length?e.changedTouches[0]:e);
-  return{x:(src.clientX-rect.left)*scx,y:(src.clientY-rect.top)*scy};
+  // Drawing coordinates are CSS pixels (the dpr transform maps them to the
+  // backing store), so no canvas.width scaling is needed here.
+  return{x:src.clientX-rect.left,y:src.clientY-rect.top};
 }
 
 function onDown(e){
