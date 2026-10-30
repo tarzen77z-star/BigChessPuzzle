@@ -53,6 +53,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .puzzle-badge{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:100px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.25)}
 .puzzle-badge.diff-tactical{background:rgba(201,168,76,0.12);color:var(--diff-tactical);border-color:rgba(201,168,76,0.3)}
 .puzzle-badge.diff-expert  {background:rgba(184,64,64,0.12);color:var(--diff-expert);border-color:rgba(184,64,64,0.3)}
+.puzzle-badge.diff-lichess{background:rgba(201,168,76,0.12);color:var(--diff-tactical);border-color:rgba(201,168,76,0.3)}
+.puzzle-badge.diff-classic  {background:rgba(184,64,64,0.12);color:var(--diff-expert);border-color:rgba(184,64,64,0.3)}
 .puzzle-num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)}
 .turn-indicator{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);padding:5px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:100px}
 .turn-dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--border2);flex-shrink:0}
@@ -185,10 +187,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="difficulty-bar">
     <span class="diff-label">Difficulty</span>
     <div class="diff-tabs">
-      <button class="diff-tab active" data-diff="tactical" onclick="setDifficulty('tactical')">⚔ Tactical</button>
-      <button class="diff-tab" data-diff="expert"   onclick="setDifficulty('expert')">★ Expert</button>
+      <button class="diff-tab active" data-diff="lichess" onclick="setDifficulty('lichess')">♞ Lichess</button>
+      <button class="diff-tab" data-diff="classic"   onclick="setDifficulty('classic')">★ Classics</button>
     </div>
-    <span class="diff-desc" id="diffDesc">Mate in 1 — find the winning move</span>
+    <span class="diff-desc" id="diffDesc">Real rated puzzles — a new one on every Next</span>
   </div>
 
   <!-- MAIN LAYOUT -->
@@ -281,6 +283,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 // =====================================================================
 // PUZZLE DATA — verified with python-chess
 // All puzzles: no check at start, no attacker on king, correct solution
+// NOTE: the Lichess feed is now the default. CLASSICS below is the curated
+// unique-solution subset used as the offline fallback; ALL_PUZZLES is kept
+// for reference only and is no longer served.
 // =====================================================================
 var ALL_PUZZLES = {
   tactical: [
@@ -327,16 +332,74 @@ var ALL_PUZZLES = {
   ],
 };
 
+// CLASSICS — the unique-solution subset of the hand-written puzzles.
+// Dropped from the old set: the rook puzzle with 11 winning first moves,
+// the Expert queen puzzle with 2 solutions, and the duplicated Mate-in-3.
+// Used only as the offline fallback when Lichess is unreachable.
+var CLASSICS = [
+  {
+    label:'Mate in 2', fen:'6k1/5ppp/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'queen-sacrifice',
+    solutionTree:{
+      'Qf7':{'Kg8':{'Qe8':{}},'Kh8':{'Qh7':{}}}
+    }
+  },
+  {
+    label:'Mate in 2', fen:'4r1k1/5ppp/8/8/8/8/5R2/3QK3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'rook-sacrifice',
+    solutionTree:{
+      'Rf8':{'Rxf8':{'Qd8':{}}}
+    }
+  },
+  {
+    label:'Mate in 3', fen:'5k2/5pp1/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'queen-maneuver',
+    solutionTree:{
+      'Qd8':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}},'Kh6':{'Qf6':{}}}}},
+      'Qd7':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
+      'Qd6':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
+      'Qd5':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
+      'Qd4':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
+      'Qd3':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}},
+      'Qd2':{'Kg7':{'Qe7':{'Kg8':{'Qe8':{}}}}},
+      'Qd1':{'Kg8':{'Qd8':{'Kh7':{'Qf5':{}}}}}
+    }
+  },
+  {
+    label:'Mate in 2', fen:'4k3/4ppp1/8/3Q4/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'bishop-queen',
+    solutionTree:{
+      'Qd8':{'Ke7':{'Qe8':{}},'Kf7':{'Qe7':{}}}
+    }
+  },
+  {
+    label:'Mate in 2', fen:'4r1k1/4pppp/8/8/8/8/5R2/3QK3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'rook-sacrifice',
+    solutionTree:{
+      'Rf8':{'Rxf8':{'Qd8':{}}}
+    }
+  },
+  {
+    label:'Mate in 2', fen:'5k2/3rppp1/8/8/8/8/8/4K3 w - - 0 1', orientation:'white', turn:'white',
+    theme:'back-rank',
+    solutionTree:{
+      'Qd8':{'Rxd8':{'Qe8':{}}}
+    }
+  },
+];
+
+// Difficulty info: Lichess feed (default) + Classics fallback
 var DIFF_INFO = {
-  tactical: { label:'⚔ Tactical', desc:'Mate in 2-3 — find the combination',  color:'var(--diff-tactical)' },
-  expert:   { label:'★ Expert',   desc:'Mate in 2-3 — beat the defenders',    color:'var(--diff-expert)'   },
+  lichess: { label:'♞ Lichess', desc:'Real rated puzzles — a new one on every Next', color:'var(--diff-tactical)' },
+  classic: { label:'★ Classics', desc:'Hand-picked mate in 2–3 — the unique ones', color:'var(--diff-expert)' },
 };
 
 // =====================================================================
 // STATE
 // =====================================================================
-var currentDiff   = 'tactical';
-var PUZZLES       = ALL_PUZZLES[currentDiff].slice();
+var currentDiff   = 'lichess';
+var SESSION_PUZZLES = [];   // Lichess feed: puzzles fetched this session
+var PUZZLES       = SESSION_PUZZLES;
 var currentIdx    = 0;
 var game, playerMoves=[], allGameMoves=[], dragState=null;
 var hintSquare=null, hintTimer=null, opponentBusy=false, solutionVisible=false;
@@ -357,18 +420,31 @@ function savePuzzleStates() { try{localStorage.setItem('cp_pstate',JSON.stringif
 // =====================================================================
 function setDifficulty(diff) {
   currentDiff = diff;
-  PUZZLES = ALL_PUZZLES[diff].slice();
-  // Restore last position for this difficulty, default 0
-  currentIdx = (puzzleState['pos_'+diff] || 0) % PUZZLES.length;
+  if(diff === 'lichess'){
+    PUZZLES = SESSION_PUZZLES;
+    currentIdx = Math.min(puzzleState['pos_'+diff] || 0, Math.max(0, PUZZLES.length - 1));
+  } else {
+    PUZZLES = CLASSICS.slice();
+    currentIdx = (puzzleState['pos_'+diff] || 0) % PUZZLES.length;
+  }
 
   // Update tab styles
   document.querySelectorAll('.diff-tab').forEach(function(t){
     t.classList.toggle('active', t.dataset.diff === diff);
   });
   document.getElementById('diffDesc').textContent = DIFF_INFO[diff].desc;
+  var gridTitle = document.querySelector('.section-title');
+  if(gridTitle) gridTitle.textContent = diff === 'lichess' ? 'Puzzles this session' : 'Puzzles in this set';
 
   // Clear visited flags for this difficulty set
   PUZZLES.forEach(function(_,i){ delete puzzleState['visited_'+diff+'_'+i]; });
+
+  // Lichess feed with nothing fetched yet: fetch the first puzzle
+  if(diff === 'lichess' && PUZZLES.length === 0){
+    setStatus('loading','Loading a Lichess puzzle…','Fetching a real rated puzzle');
+    fetchNextLichess();
+    return;
+  }
   initPuzzle();
 }
 
@@ -540,8 +616,33 @@ function onUp(e){
   // Check if this was the mating move
   if(game.in_checkmate()){puzzleSolved();return;}
 
-  // Opponent replies — look up in tree branch
+  // Opponent replies — look up in tree branch, or the next linear solution move
   if(!currentBranch || Object.keys(currentBranch).length===0){
+    if(!tree){
+      // Linear mode (Lichess puzzles): the solution line alternates
+      // player/opponent, so play the opponent's scripted reply here.
+      // Only solve when the solution line is exhausted.
+      var oppIdx = playerMoves.length*2 - 1;
+      if(oppIdx < p.solution.length){
+        opponentBusy=true;
+        setStatus('correct','Good move!','Opponent is thinking…');
+        (function(uci){
+          setTimeout(function(){
+            var om = game.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:'q'});
+            if(om){
+              allGameMoves.push(om.san);
+              updateProgress();
+              updateMoveHistory();
+              render();
+            }
+            opponentBusy=false;
+            if(game.in_checkmate()) puzzleSolved();
+            else setStatus('idle','Keep going — find the next move',"You're on the right track!");
+          },650);
+        })(p.solution[oppIdx]);
+        return;
+      }
+    }
     puzzleSolved(); return;
   }
 
@@ -785,8 +886,10 @@ function runSolveAnimation(){
     setTimeout(function(){
       banner.className='';
       // Auto-advance to next puzzle after animation completes
-      // If this was the last puzzle, stay on it rather than wrapping to #1
-      if (currentIdx < PUZZLES.length - 1) {
+      // Lichess feed: fetch a fresh puzzle instead of staying on the last one
+      if (currentDiff === 'lichess' && currentIdx >= PUZZLES.length - 1) {
+        fetchNextLichess();
+      } else if (currentIdx < PUZZLES.length - 1) {
         currentIdx = currentIdx + 1;
         delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
         initPuzzle();
@@ -799,6 +902,55 @@ function runSolveAnimation(){
 // =====================================================================
 // CONTROLS
 // =====================================================================
+// Lichess feed: fetch one real rated puzzle and make it the current one.
+// In Lichess mode it appends to the session list; otherwise it is shown
+// immediately (same as the "Load from Lichess" button). On failure with an
+// empty session, the app falls back to the Classics set.
+var lichessLoading = false;
+function fetchNextLichess(){
+  if(lichessLoading) return;
+  lichessLoading = true;
+  setStatus('loading','Loading a Lichess puzzle…','Fetching a real rated puzzle');
+  fetch('https://lichess.org/api/puzzle/next',{headers:{Accept:'application/json'}})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){
+      var puz = data.puzzle, gd = data.game;
+      var fen = buildFenFromPGN(gd.pgn, puz.initialPly + 1);
+      if(!fen) throw new Error('Bad FEN');
+      var tmp = new Chess(fen), turn = tmp.turn() === 'w' ? 'white' : 'black';
+      var np = {
+        label: 'Lichess · ' + (puz.rating || '?'),
+        fen: fen, solution: puz.solution, orientation: turn, turn: turn,
+        theme: (puz.themes && puz.themes[0]) || 'tactics', rating: puz.rating || '?'
+      };
+      if(currentDiff === 'lichess'){
+        SESSION_PUZZLES.push(np);
+        PUZZLES = SESSION_PUZZLES;
+        currentIdx = PUZZLES.length - 1;
+      } else {
+        PUZZLES.unshift(np);
+        currentIdx = 0;
+      }
+      document.getElementById('fetchRating').textContent = np.rating;
+      document.getElementById('fetchTheme').textContent = np.theme;
+      document.getElementById('fetchedInfo').style.display = 'flex';
+      initPuzzle();
+    })
+    .catch(function(err){
+      if(currentDiff === 'lichess' && SESSION_PUZZLES.length === 0){
+        setStatus('wrong','Could not reach Lichess','Showing the Classics set instead — check your connection');
+        setTimeout(function(){ setDifficulty('classic'); }, 1800);
+      } else {
+        setStatus('wrong','Could not load a new puzzle','Check your internet connection');
+        setTimeout(function(){
+          var p = getPuzzle();
+          setStatus('idle','Find the winning sequence', p ? (p.theme || '') : '');
+        }, 2500);
+      }
+    })
+    .finally(function(){ lichessLoading = false; });
+}
+
 function showHint(){
   var p=getPuzzle();
   // Get current player move from tree or linear solution
@@ -836,9 +988,17 @@ function showSolution(){
   }
 }
 
-function resetPuzzle(){initPuzzle();}
+function resetPuzzle(){
+  if(currentDiff === 'lichess' && PUZZLES.length === 0){ fetchNextLichess(); return; }
+  initPuzzle();
+}
 
 function nextPuzzle(){
+  // Lichess feed: at the end of the session list, fetch a fresh puzzle
+  if(currentDiff === 'lichess' && currentIdx >= PUZZLES.length - 1){
+    fetchNextLichess();
+    return;
+  }
   currentIdx=(currentIdx+1)%PUZZLES.length;
   delete puzzleState['visited_'+currentDiff+'_'+currentIdx];
   initPuzzle();
@@ -863,7 +1023,7 @@ function loadLichessPuzzle(){
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
       var puz=data.puzzle, gd=data.game;
-      var fen=buildFenFromPGN(gd.pgn,puz.initialPly);
+      var fen=buildFenFromPGN(gd.pgn,puz.initialPly+1);
       if(!fen) throw new Error('Bad FEN');
       var tmp=new Chess(fen), turn=tmp.turn()==='w'?'white':'black';
       var np={label:'Lichess Puzzle',fen:fen,solution:puz.solution,orientation:turn,turn:turn,
@@ -883,6 +1043,11 @@ function loadLichessPuzzle(){
     .finally(function(){btn.disabled=false;btn.textContent='♞ Load from Lichess';});
 }
 
+// Build the puzzle FEN by replaying a game's PGN.
+// NOTE: Lichess's initialPly counts the moves BEFORE the puzzle position's
+// last setup move — the puzzle board is reached after initialPly+1 half-moves
+// (verified against live puzzles: initialPly alone leaves the solution's
+// first move illegal). Callers must pass initialPly+1.
 function buildFenFromPGN(pgn,targetPly){
   try{
     var g=new Chess(), toks=pgn.trim().split(/\s+/).filter(function(t){return !/^\d+\./.test(t)&&t&&t!=='*';});
@@ -904,7 +1069,7 @@ if(stats.attempts>(stats.solved||0)*15){stats.attempts=stats.solved||0;saveStats
 updateStatsUI();
 // Init difficulty tabs
 document.getElementById('diffDesc').textContent=DIFF_INFO[currentDiff].desc;
-window.addEventListener('load',function(){initPuzzle();});
+window.addEventListener('load',function(){setDifficulty('lichess');});
 window.addEventListener('resize',function(){if(game){initCanvas();render();}});
 </script>
 </body>
