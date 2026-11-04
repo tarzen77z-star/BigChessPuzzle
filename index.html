@@ -479,13 +479,13 @@ function drawBoard(ori){
   for(var row=0;row<8;row++) for(var col=0;col<8;col++){
     var file=ori==='white'?col:7-col, rank=ori==='white'?7-row:row;
     var sq=sqName(file,rank), light=(file+rank)%2===1;
-    var color=light?'#e8dfc5':'#7a5c1e';
+    var color=light?'#f2e8cf':'#6b4a12';
     if(hintSquare&&sq===hintSquare) color='#c9a84c';
     if(dragState&&sqName(dragState.fromFile,dragState.fromRank)===sq)
       color=light?'rgba(201,168,76,0.6)':'rgba(201,168,76,0.5)';
     ctx.fillStyle=color; ctx.fillRect(col*SQ,row*SQ,SQ,SQ);
-    ctx.font=Math.round(SQ*0.17)+'px JetBrains Mono,monospace';
-    ctx.fillStyle=light?'#9a8b6a':'#c9a84c';
+    ctx.font=Math.round(SQ*0.19)+'px JetBrains Mono,monospace';
+    ctx.fillStyle=light?'#8a6d2f':'#e8c96a';
     if(col===0){ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(rank+1,col*SQ+3,row*SQ+3);}
     if(row===7){ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('abcdefgh'[file],col*SQ+SQ-3,row*SQ+SQ-3);}
   }
@@ -512,18 +512,22 @@ function drawLegalDots(ori){
 function drawPiece(key,cx,cy,sz){
   // Use the FILLED glyph shape for both colors: the white outline glyphs
   // (♔♙) are hollow, so brown showed through and white read as black.
-  // A solid white shape with a dark rim reads as white on any square.
+  // Readability round 2 (Nov 4): pure fills plus a THICK fully-opaque rim,
+  // so each piece reads as its own color on either square color — the old
+  // off-white fill vanished on cream squares and the faint 0.45 white rim
+  // let black pieces melt into the dark squares.
   var sym=PIECES['b'+key[1]]||PIECES[key]; if(!sym) return;
   ctx.font=sz+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineWidth=Math.max(2,sz*0.10);
-  ctx.strokeStyle=key[0]==='w'?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.45)';
+  ctx.lineJoin='round'; ctx.miterLimit=2;
+  ctx.lineWidth=Math.max(2,sz*0.16);
+  ctx.strokeStyle=key[0]==='w'?'#000000':'rgba(255,255,255,0.95)';
   ctx.strokeText(sym,cx,cy);
-  ctx.fillStyle=key[0]==='w'?'#fffde7':'#1a1208';
+  ctx.fillStyle=key[0]==='w'?'#ffffff':'#000000';
   ctx.fillText(sym,cx,cy);
 }
 
 function drawPieces(ori){
-  var brd=game.board(), sz=Math.round(SQ*0.84);
+  var brd=game.board(), sz=Math.round(SQ*0.95);
   for(var rank=0;rank<8;rank++) for(var file=0;file<8;file++){
     var piece=brd[7-rank][file]; if(!piece) continue;
     var sq=sqName(file,rank);
@@ -537,7 +541,7 @@ function drawPieces(ori){
 function drawDragged(){
   if(!dragState) return;
   ctx.save(); ctx.globalAlpha=0.93;
-  drawPiece(dragState.piece.color+dragState.piece.type.toUpperCase(),dragState.x,dragState.y,Math.round(SQ*0.88));
+  drawPiece(dragState.piece.color+dragState.piece.type.toUpperCase(),dragState.x,dragState.y,Math.round(SQ*0.98));
   ctx.restore();
 }
 
